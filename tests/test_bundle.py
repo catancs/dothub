@@ -39,8 +39,13 @@ def test_effects_manifest_no_code():
     assert m["runs_code"] is False
 
 def test_secret_flag():
-    m = effects_manifest({"x.md": "key sk-ABC123 here"})
+    m = effects_manifest({"x.md": "key sk-ABCD12345678 here"})
     assert any("x.md" in f for f in m["secret_flags"])
+
+def test_secret_flag_no_false_positive_midword():
+    # 'task-...' / 'risk-...' must NOT be flagged as an sk- secret
+    m = effects_manifest({"x.md": "see the task-12345678 item and risk-99999999 note"})
+    assert m["secret_flags"] == []
 
 def test_slugify():
     assert slugify("My Cool Flow!") == "my-cool-flow"

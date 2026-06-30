@@ -10,7 +10,7 @@ class BundleError(ValueError):
     pass
 
 
-SECRET_PATTERNS = [r"sk-[A-Za-z0-9]{4,}", r"AKIA[0-9A-Z]{16}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"]
+SECRET_PATTERNS = [r"(?<![A-Za-z0-9])sk-[A-Za-z0-9]{8,}", r"AKIA[0-9A-Z]{16}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"]
 
 
 def validate_files(files: dict[str, str], max_bytes: int, max_files: int = 500) -> None:
