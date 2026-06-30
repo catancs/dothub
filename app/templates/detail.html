@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><title>{{ p.title }} — dothub</title>
+<style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 16px}
+code{background:#f3f3f5;padding:2px 5px;border-radius:4px}
+.notice{background:#fff8ec;border:1px solid #f1d9a8;padding:12px;border-radius:8px;color:#7c4a02}
+pre{background:#0f0f14;color:#e7e7f2;padding:12px;border-radius:8px;overflow:auto}</style>
+</head><body>
+<a href="/">← feed</a>
+<h1>{{ p.title }} <small>v{{ p.version }}</small></h1>
+<p>{{ p.description }}</p>
+
+<h3>What this setup does</h3>
+{% if p.effects.runs_code %}
+<div class="notice"><strong>⚠ This setup runs code.</strong> Review the exact commands below before installing.
+Verifying it is safe is your responsibility — dothub shows effects but does not vet them.</div>
+{% else %}
+<div class="notice">No hooks or MCP servers. Still your responsibility to review before installing.</div>
+{% endif %}
+
+{% if p.effects.hooks %}<h4>Hooks</h4><ul>
+{% for h in p.effects.hooks %}<li>{{ h.event }}: <code>{{ h.command }}</code></li>{% endfor %}
+</ul>{% endif %}
+
+{% if p.effects.mcp_servers %}<h4>MCP servers</h4><ul>
+{% for m in p.effects.mcp_servers %}<li>{{ m.name }}: <code>{{ m.command }} {{ m.args|join(' ') }}</code></li>{% endfor %}
+</ul>{% endif %}
+
+<h4>Files</h4><pre>{% for f in p.files %}{{ f }}
+{% endfor %}</pre>
+</body></html>

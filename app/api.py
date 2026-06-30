@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,6 +11,7 @@ from .models import User, ApiKey
 from . import security, setups
 
 router = APIRouter()
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 class SignupIn(BaseModel):
     username: str
@@ -94,3 +99,15 @@ def api_download(slug: str, db: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="not found")
     s, v = setups._load_latest(db, slug)
     return {"url": presign_get(v.archive_key), "version": res["version"]}
+
+@router.get("/", response_class=HTMLResponse)
+def html_feed(request: Request, db: Session = Depends(get_session)):
+    return templates.TemplateResponse("feed.html", {"request": request, "setups": setups.list_setups(db)})
+
+@router.get("/s/{slug}", response_class=HTMLResponse)
+def html_detail(slug: str, request: Request, db: Session = Depends(get_session)):
+    try:
+        p = setups.preview(db, slug)
+    except setups.NotFound:
+        raise HTTPException(status_code=404, detail="not found")
+    return templates.TemplateResponse("detail.html", {"request": request, "p": p})
