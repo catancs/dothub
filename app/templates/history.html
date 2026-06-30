@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}History - dothub{% endblock %}
+{% block body %}
+<style>
+.pills a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink-2);padding:7px 15px;border-radius:8px;text-decoration:none;transition:.15s}
+.pills a.on{background:var(--ink);color:#fff}
+</style>
+<section class="screen active" id="history">
+  <div class="phead">
+    <div class="eyebrow">Your activity</div>
+    <h1 class="big">History</h1>
+    <p class="sub">Everything you pushed and pulled, with the exact contents at that moment. Reverting a push republishes that version as your latest.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="pills">
+      <a href="/history?filter=all"{% if filter == "all" %} class="on"{% endif %}>All</a>
+      <a href="/history?filter=pushed"{% if filter == "pushed" %} class="on"{% endif %}>Pushed</a>
+      <a href="/history?filter=pulled"{% if filter == "pulled" %} class="on"{% endif %}>Pulled</a>
+    </div>
+  </div>
+
+  <div class="timeline">
+    {% for e in events %}
+    <div class="tl{% if e.kind == 'pull' %} pull{% endif %}"><div class="tl-card">
+      <div class="tl-top">
+        {% if e.kind == "push" %}
+        <span class="kind push">Pushed</span>
+        {% else %}
+        <span class="kind pull">Pulled</span>
+        {% endif %}
+        <h4>{{ e.slug }}</h4>
+        <span class="vtag">v{{ e.version }}</span>
+        <time>{{ e.at }}</time>
+      </div>
+      <div class="tl-body">
+        {% if e.kind == "pull" and e.runs_code %}
+        <span class="chip code"><span class="pip"></span>runs code</span>
+        {% endif %}
+        <span class="tl-act">
+          <a href="/s/{{ e.slug }}">View contents</a>
+          {% if e.kind == "push" %}
+          <a href="/s/{{ e.slug }}">Revert to this</a>
+          {% else %}
+          <a href="/s/{{ e.slug }}">Re-pull this version</a>
+          {% endif %}
+        </span>
+      </div>
+    </div></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
