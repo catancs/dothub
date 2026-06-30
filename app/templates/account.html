@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Account · dothub{% endblock %}
+{% block body %}
+<div class="profile-hero">
+  <div class="pf-av">{{ (profile.display_name or profile.username)[:2]|upper }}</div>
+  <div style="flex:1;min-width:240px">
+    <div class="pf-name">{{ profile.display_name or profile.username }}</div>
+    <div class="pf-handle">@{{ profile.username }}</div>
+    {% if profile.bio %}<p class="sub" style="margin-top:8px">{{ profile.bio }}</p>{% endif %}
+    <div class="pf-stats">
+      <span><b>{{ counts.setups }}</b> setups</span>
+      <span><b>{{ counts.followers }}</b> followers</span>
+      <span><b>{{ counts.following }}</b> following</span>
+      <span><b>{{ counts.pulls }}</b> pulls</span>
+    </div>
+    <div class="socials">
+      {% if profile.link_linkedin %}<a class="soc li" href="{{ profile.link_linkedin }}" rel="noopener noreferrer nofollow"><span class="g"></span>LinkedIn</a>{% endif %}
+      {% if profile.link_github %}<a class="soc gh" href="{{ profile.link_github }}" rel="noopener noreferrer nofollow"><span class="g"></span>GitHub</a>{% endif %}
+      {% if profile.link_x %}<a class="soc x" href="{{ profile.link_x }}" rel="noopener noreferrer nofollow"><span class="g"></span>X</a>{% endif %}
+    </div>
+  </div>
+  <a class="btn line" href="/u/{{ profile.username }}">View public profile</a>
+</div>
+
+<div class="section-label">Edit profile</div>
+<form class="card" method="post" action="/account" style="cursor:default">
+  <label class="metric" for="display_name">Display name</label>
+  <input id="display_name" name="display_name" value="{{ profile.display_name or '' }}" placeholder="Your name" style="display:block;width:100%;margin:6px 0 16px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--raise)">
+  <label class="metric" for="bio">Bio</label>
+  <textarea id="bio" name="bio" rows="3" placeholder="A short bio" style="display:block;width:100%;margin:6px 0 16px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--raise)">{{ profile.bio or '' }}</textarea>
+  <label class="metric" for="link_github">GitHub</label>
+  <input id="link_github" name="link_github" value="{{ profile.link_github or '' }}" placeholder="https://github.com/you" style="display:block;width:100%;margin:6px 0 16px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--raise)">
+  <label class="metric" for="link_linkedin">LinkedIn</label>
+  <input id="link_linkedin" name="link_linkedin" value="{{ profile.link_linkedin or '' }}" placeholder="https://linkedin.com/in/you" style="display:block;width:100%;margin:6px 0 16px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--raise)">
+  <label class="metric" for="link_x">X</label>
+  <input id="link_x" name="link_x" value="{{ profile.link_x or '' }}" placeholder="https://x.com/you" style="display:block;width:100%;margin:6px 0 18px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--raise)">
+  <button class="btn primary" type="submit">Save profile</button>
+</form>
+
+<div class="section-label">API keys</div>
+{% for k in keys %}
+<div class="keyrow"><span class="kn">{{ k.label or 'key' }}</span><span class="kv">created {{ k.created_at.strftime('%Y-%m-%d') }}</span></div>
+{% else %}
+<p class="sub" style="margin:0 0 12px">No API keys yet. Mint one to use the CLI or MCP server.</p>
+{% endfor %}
+<button class="btn line" id="mint-key" style="margin-top:4px">Mint new key</button>
+<div class="keyrow" id="new-key-row" style="display:none;margin-top:12px">
+  <span class="kn">new key</span>
+  <span class="kv" id="new-key-val"></span>
+</div>
+<p class="sub" id="new-key-note" style="display:none;margin-top:8px">Copy this now. It is shown only once.</p>
+
+<div class="section-label">Your setups</div>
+{% if setups %}
+<div class="grid">
+  {% for item in setups %}
+  <a class="card{% if item.runs_code %} flag{% endif %}" href="/s/{{ item.setup.slug }}">
+    <div class="card-top">
+      <div>
+        <h3>{{ item.setup.title }}</h3>
+        <div class="slug"><b>{{ profile.username }}</b>/{{ item.setup.slug }}</div>
+      </div>
+      <span class="vtag">v{{ item.setup.latest_version }}</span>
+    </div>
+    <div class="card-foot">
+      <span class="metric">{{ item.setup.downloads }} pulls</span>
+      {% if item.runs_code %}
+      <span class="chip code" style="margin-left:auto"><span class="pip"></span>runs code</span>
+      {% else %}
+      <span class="chip safe" style="margin-left:auto"><span class="pip"></span>no code</span>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="sub">You have not published any setups yet.</p>
+{% endif %}
+
+<script>
+document.getElementById('mint-key').addEventListener('click', async function () {
+  this.disabled = true;
+  try {
+    const r = await fetch('/api/keys', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({label: 'web'})
+    });
+    if (!r.ok) throw new Error('mint failed');
+    const data = await r.json();
+    document.getElementById('new-key-val').textContent = data.api_key;
+    document.getElementById('new-key-row').style.display = 'flex';
+    document.getElementById('new-key-note').style.display = 'block';
+  } catch (e) {
+    this.textContent = 'Could not mint key';
+  } finally {
+    this.disabled = false;
+  }
+});
+</script>
+{% endblock %}
