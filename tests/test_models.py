@@ -15,3 +15,18 @@ def test_user_and_setup_roundtrip(db):
     assert s.downloads == 0
     assert isinstance(u.created_at, datetime)
     assert v.manifest_json["runs_code"] is False
+
+
+def test_setup_version_unique_constraint(db):
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+    from app.models import User, Setup, SetupVersion
+    u = User(username="u", email="u@x.com", password_hash="x"); db.add(u); db.commit()
+    s = Setup(owner_id=u.id, slug="s", title="t", description="d", latest_version=1)
+    db.add(s); db.commit()
+    db.add(SetupVersion(setup_id=s.id, version=1, manifest_json={}, archive_key="k1", size_bytes=1))
+    db.commit()
+    db.add(SetupVersion(setup_id=s.id, version=1, manifest_json={}, archive_key="k2", size_bytes=1))
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()

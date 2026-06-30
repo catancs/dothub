@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -45,6 +45,7 @@ class Setup(Base):
 
 class SetupVersion(Base):
     __tablename__ = "setup_version"
+    __table_args__ = (UniqueConstraint("setup_id", "version", name="uq_setup_version"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     setup_id: Mapped[int] = mapped_column(ForeignKey("setup.id"))
     version: Mapped[int] = mapped_column(Integer)
