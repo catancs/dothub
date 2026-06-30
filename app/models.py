@@ -17,6 +17,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    link_github: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    link_linkedin: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    link_x: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
 
 class ApiKey(Base):
@@ -53,3 +58,21 @@ class SetupVersion(Base):
     archive_key: Mapped[str] = mapped_column(String(200))
     size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class Follow(Base):
+    __tablename__ = "follow"
+    __table_args__ = (UniqueConstraint("follower_id", "followee_id", name="uq_follow"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    follower_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    followee_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class PullEvent(Base):
+    __tablename__ = "pull_event"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    setup_id: Mapped[int] = mapped_column(ForeignKey("setup.id"))
+    version: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
