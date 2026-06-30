@@ -35,3 +35,4 @@ def client():
     from app.main import app
     with TestClient(app) as c:
         yield c
+    Base.metadata.drop_all(engine)
