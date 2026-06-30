@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dothub — Agent Setup Hub · v1 walkthrough</title>
+<style>
+  :root{
+    --ink:#15151a; --muted:#6b7280; --line:#e6e6ea; --bg:#fbfbfd; --card:#fff;
+    --accent:#4f46e5; --accent-soft:#eef0ff; --green:#0f9d58; --amber:#b45309;
+    --amber-bg:#fff8ec; --green-bg:#eefbf3; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  code,.mono{font-family:var(--mono);font-size:.86em}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+
+  /* hero */
+  header.hero{background:#0f0f14;color:#fff;padding:64px 0 56px}
+  .hero .eyebrow{color:#8b8ba7;font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+  .hero h1{font-size:44px;line-height:1.05;margin:0 0 16px;letter-spacing:-.02em}
+  .hero h1 .dot{color:var(--accent)}
+  .hero p.lead{font-size:20px;color:#d6d6e0;margin:0;max-width:640px}
+  .hero .tags{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px}
+  .hero .tags span{border:1px solid #2a2a36;color:#b9b9c9;border-radius:999px;padding:5px 12px;font-size:13px}
+
+  /* sticky nav */
+  nav.toc{position:sticky;top:0;z-index:10;background:rgba(251,251,253,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+  nav.toc a{color:var(--muted);font-size:13.5px;padding:5px 10px;border-radius:7px}
+  nav.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{color:var(--accent);font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;margin:0 0 10px}
+  h2{font-size:28px;letter-spacing:-.015em;margin:0 0 8px}
+  h2 + .sub{color:var(--muted);margin:0 0 26px;font-size:17px}
+  h3{font-size:18px;margin:28px 0 10px}
+
+  /* generic cards */
+  .grid{display:grid;gap:16px}
+  .grid.c2{grid-template-columns:repeat(2,1fr)}
+  .grid.c3{grid-template-columns:repeat(3,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h4{margin:0 0 6px;font-size:16px}
+  .card p{margin:0;color:var(--muted);font-size:14.5px}
+  .card .ic{font-size:22px;display:block;margin-bottom:10px}
+
+  /* pills / actors */
+  .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;
+    letter-spacing:.02em;text-transform:uppercase;vertical-align:middle}
+  .a-you{background:#e8efff;color:#2950c8}
+  .a-agent{background:#ede9ff;color:#5b3ce0}
+  .a-server{background:#e7f7ee;color:#0c7a43}
+  .a-db{background:#fdeede;color:#9a5b00}
+
+  /* flow rail */
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 22px 12px;margin-bottom:18px}
+  .flow > .flowhead{display:flex;align-items:center;gap:10px;padding:14px 0 4px;font-weight:600}
+  .flow > .flowhead .n{background:var(--accent);color:#fff;width:26px;height:26px;border-radius:8px;
+    display:grid;place-items:center;font-size:14px}
+  ol.steps{list-style:none;margin:6px 0 8px;padding:0;position:relative}
+  ol.steps:before{content:"";position:absolute;left:9px;top:6px;bottom:10px;width:2px;background:var(--line)}
+  ol.steps li{position:relative;padding:8px 0 8px 34px;font-size:15px}
+  ol.steps li:before{content:"";position:absolute;left:4px;top:14px;width:12px;height:12px;border-radius:50%;
+    background:#fff;border:2px solid var(--accent)}
+  ol.steps li .what{display:block}
+  ol.steps li small{color:var(--muted)}
+
+  /* architecture */
+  .arch{background:#0f0f14;border-radius:14px;padding:22px;color:#cfcfe0;font-family:var(--mono);font-size:13.5px;overflow:auto}
+  .arch .lvl{display:flex;gap:10px;align-items:center;margin:3px 0}
+  .arch .box{border:1px solid #2c2c3a;border-radius:8px;padding:4px 10px;color:#e7e7f2}
+  .arch .accent{color:#a99bff}
+  .arch .arrow{color:#5b5b73}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f4f4f7;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  td code{background:var(--accent-soft);padding:1px 5px;border-radius:5px;color:#3b34b0}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .listcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .listcard h4{margin:0 0 12px;font-size:15px}
+  .listcard ul{margin:0;padding:0;list-style:none}
+  .listcard li{padding:7px 0 7px 26px;position:relative;font-size:14.5px;border-top:1px solid var(--line)}
+  .listcard li:first-of-type{border-top:none}
+  .listcard li:before{position:absolute;left:0;top:7px}
+  .in li:before{content:"✓";color:var(--green);font-weight:700}
+  .out li:before{content:"◷";color:var(--amber)}
+  .out li small{display:block;color:var(--muted);font-size:12.5px}
+
+  .callout{border:1px solid #f1d9a8;background:var(--amber-bg);border-radius:14px;padding:18px 20px;margin:18px 0}
+  .callout h4{margin:0 0 6px;color:var(--amber);font-size:15px}
+  .callout p{margin:0 0 8px;font-size:14.5px}
+  .callout.green{border-color:#bfe8cf;background:var(--green-bg)}
+  .callout.green h4{color:var(--green)}
+
+  .qlist{display:grid;gap:10px}
+  .q{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:10px;padding:13px 16px;font-size:14.5px}
+  .q b{display:block;margin-bottom:2px}
+  .q span{color:var(--muted)}
+
+  footer{padding:34px 0 60px;color:var(--muted);font-size:13.5px}
+  .deck{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  @media(max-width:720px){
+    .grid.c3,.grid.c2,.twocol{grid-template-columns:1fr}
+    .hero h1{font-size:34px}.hero p.lead{font-size:18px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">v1 walkthrough · 2026-06-30 · working name</p>
+    <h1>dot<span class="dot">hub</span></h1>
+    <p class="lead">A social hub for whole Claude Code setups. Publish your entire <code>.claude/</code> as a versioned setup, browse what others run, and pull any setup in — and your agent does it itself.</p>
+    <div class="tags">
+      <span>GitHub-for-dotfiles × Product Hunt</span>
+      <span>Remote MCP server</span>
+      <span>FastAPI + Postgres</span>
+      <span>AWS cloud-native</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#idea">Idea</a>
+  <a href="#caps">Capabilities</a>
+  <a href="#flows">Flows</a>
+  <a href="#arch">Architecture</a>
+  <a href="#data">Data</a>
+  <a href="#api">API &amp; MCP</a>
+  <a href="#deploy">Deploy</a>
+  <a href="#scope">Scope</a>
+  <a href="#missing">What's missing?</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- IDEA -->
+<section id="idea">
+  <p class="eyebrow">The idea</p>
+  <h2>The whole environment, shared and discoverable</h2>
+  <p class="sub">Not another skills directory. The bundle is your <em>entire</em> agent setup, and the discovery layer is social.</p>
+  <p>People pour real effort into their Claude Code harness — <code>CLAUDE.md</code>, skills, custom commands, subagents, hooks, MCP servers. Today that work lives in private dotfile repos, or gets shared one fragment at a time on component directories. <strong>dothub hosts the whole bundle, versioned, behind a public feed</strong> — so you can publish yours, see what smart people actually run, and pull a setup into your own machine in one move.</p>
+
+  <div class="callout green">
+    <h4>Why this is open territory</h4>
+    <p>Research (2026-06-29) found the pieces exist but split along a fracture nobody bridges: <strong>component registries</strong> (Smithery / cursor.directory / Open Agent Skills) are social but single-artifact; <strong>sync tools</strong> (ai-dotfiles-manager / Microsoft APM / MCP Market Hub) are whole-environment but private/team-only. The missing tile is <strong>whole-environment bundles + a public social feed + agent-native push</strong>.</p>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="caps">
+  <p class="eyebrow">Capabilities</p>
+  <h2>What it can do</h2>
+  <p class="sub">v1 surface — small on purpose, but a complete loop.</p>
+  <div class="grid c3">
+    <div class="card"><span class="ic">📦</span><h4>Publish a setup</h4><p>Bundle your <code>.claude/</code> into a versioned setup. Re-publishing bumps the version automatically.</p></div>
+    <div class="card"><span class="ic">🤖</span><h4>Agent self-push</h4><p>Tell your agent “publish my setup” — it reads its own config and pushes via a remote MCP tool. No separate CLI.</p></div>
+    <div class="card"><span class="ic">🔎</span><h4>Browse the feed</h4><p>A public web feed of setups sorted by popularity. Each setup has a detail page with its file tree and versions.</p></div>
+    <div class="card"><span class="ic">⬇️</span><h4>Pull / install</h4><p>Pull any setup straight into your own <code>.claude/</code>. The agent writes the files and reloads.</p></div>
+    <div class="card"><span class="ic">🔑</span><h4>Accounts</h4><p>Sign up with email + password. Generate an API key from your account; the agent uses it to publish. Humans log in, agents use keys.</p></div>
+    <div class="card"><span class="ic">🧩</span><h4>Native bundle format</h4><p>Uses the existing Claude Code plugin layout — we host a standard, we don’t invent one.</p></div>
+  </div>
+</section>
+
+<!-- FLOWS -->
+<section id="flows">
+  <p class="eyebrow">Flows</p>
+  <h2>Walk through it</h2>
+  <p class="sub">Four flows. Watch who does what — <span class="pill a-you">you</span> <span class="pill a-agent">agent</span> <span class="pill a-server">server</span> <span class="pill a-db">db</span>. Note the agent does all local filesystem work; the server is a pure registry.</p>
+
+  <div class="flow">
+    <div class="flowhead"><span class="n">A</span> Publish — agent self-push</div>
+    <ol class="steps">
+      <li><span class="what"><span class="pill a-you">you</span> “Publish my setup as <code>my-python-flow</code>.”</span></li>
+      <li><span class="what"><span class="pill a-agent">agent</span> reads its own <code>~/.claude/</code> — skills, commands, agents, <code>hooks/</code>, <code>.mcp.json</code>, <code>CLAUDE.md</code> — using its file tools.</span></li>
+      <li><span class="what"><span class="pill a-agent">agent</span> builds a <code>{path: content}</code> map and calls <code>publish_setup(title, description, files)</code> on the remote MCP server (auth: your API key).</span></li>
+      <li><span class="what"><span class="pill a-server">server</span> validates (path-traversal guard, size cap, secret scan), tars the entries, parses the manifest.</span></li>
+      <li><span class="what"><span class="pill a-db">db</span> inserts a <code>setup_version</code> with <code>version = latest + 1</code>.</span></li>
+      <li><span class="what"><span class="pill a-server">server</span> returns <code>{slug, version, url}</code> → your setup is live on the feed.</span></li>
+    </ol>
+  </div>
+
+  <div class="flow">
+    <div class="flowhead"><span class="n">B</span> Discover &amp; install — pull someone’s setup</div>
+    <ol class="steps">
+      <li><span class="what"><span class="pill a-you">you</span> browse the feed, or ask “list popular setups.”</span></li>
+      <li><span class="what"><span class="pill a-agent">agent</span> calls <code>list_setups()</code> → <span class="pill a-server">server</span> returns ranked cards (with a ⚠ on any that run code).</span></li>
+      <li><span class="what"><span class="pill a-you">you</span> “Install <code>some-user/claude-setup</code>.”</span></li>
+      <li><span class="what"><span class="pill a-agent">agent</span> calls <code>preview_setup(slug)</code> → <span class="pill a-server">server</span> returns the <strong>effects manifest</strong> (exact hook commands, MCP servers) + file list.</span></li>
+      <li><span class="what"><span class="pill a-agent">agent</span> shows you a <strong>diff vs your current <code>.claude/</code></strong>, the exact commands, and what runs code — then waits.</span></li>
+      <li><span class="what"><span class="pill a-you">you</span> <strong>approve.</strong> Only now <span class="pill a-agent">agent</span> calls <code>install_setup</code>, <span class="pill a-db">db</span> bumps <code>downloads</code>, files are written, <code>/reload</code>.</span></li>
+    </ol>
+  </div>
+
+  <div class="flow">
+    <div class="flowhead"><span class="n">C</span> Browse — the human web feed</div>
+    <ol class="steps">
+      <li><span class="what"><span class="pill a-you">you</span> open <code>/</code> → a feed of public setups (title, author, downloads, component summary).</span></li>
+      <li><span class="what"><span class="pill a-you">you</span> open <code>/s/{slug}</code> → detail: description, version history, file tree, and copy-paste pull instructions.</span></li>
+    </ol>
+  </div>
+
+  <div class="flow">
+    <div class="flowhead"><span class="n">D</span> Onboard — get a key</div>
+    <ol class="steps">
+      <li><span class="what"><span class="pill a-you">you</span> <code>POST /api/signup {username, email}</code> → <code>{api_key}</code> (shown once).</span></li>
+      <li><span class="what"><span class="pill a-you">you</span> paste the key into your Claude Code MCP server config — done, you can now publish.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <p class="eyebrow">Architecture</p>
+  <h2>One process, one artifact</h2>
+  <p class="sub">A single FastAPI app is <em>both</em> the remote MCP server and the web feed. Same binary on AWS and the VPS — only env vars differ.</p>
+  <div class="arch">
+    <div class="lvl"><span class="box accent">Claude Code agent</span> <span class="box accent">+ browser</span></div>
+    <div class="lvl"><span class="arrow">└▶</span> <span class="box">Nginx — TLS, reverse proxy</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;└▶</span> <span class="box">gunicorn / uvicorn (systemd) → FastAPI</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─</span> <span class="box">GET /&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HTML feed</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─</span> <span class="box">GET /s/{slug}&nbsp;detail</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─</span> <span class="box">/api/...&nbsp;&nbsp;&nbsp;JSON REST</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─</span> <span class="box accent">/mcp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remote MCP (FastMCP)</span></div>
+    <div class="lvl"><span class="arrow">&nbsp;&nbsp;&nbsp;└▶</span> <span class="box">Postgres — users · setups · setup_versions</span></div>
+  </div>
+  <p style="margin-top:16px;color:var(--muted);font-size:14.5px"><strong>The boundary that keeps it simple:</strong> the server is only a registry. The agent (local) does every filesystem read/write. The backend never touches your disk, so it stays a clean stateless networked service.</p>
+</section>
+
+<!-- DATA -->
+<section id="data">
+  <p class="eyebrow">Data model</p>
+  <h2>Four tables</h2>
+  <p class="sub">That’s the whole schema for v1. Metadata in RDS; bundle bytes in S3.</p>
+  <table>
+    <tr><th>Table</th><th>Columns</th><th>Notes</th></tr>
+    <tr><td><code>user</code></td><td>id · username* · email* · password_hash · created_at</td><td>Password auth (bcrypt/argon2); *unique</td></tr>
+    <tr><td><code>api_key</code></td><td>id · user_id · key_hash · label · created_at · last_used_at</td><td>Mint/revoke keys; agents authenticate with these</td></tr>
+    <tr><td><code>setup</code></td><td>id · owner_id · slug* · title · description · latest_version · downloads · is_public · timestamps</td><td>One row per setup; *slug globally unique in v1</td></tr>
+    <tr><td><code>setup_version</code></td><td>id · setup_id · version · manifest_json · archive_key · size_bytes · created_at</td><td>Bytes in S3 (archive_key); manifest_json holds the effects manifest</td></tr>
+  </table>
+</section>
+
+<!-- API -->
+<section id="api">
+  <p class="eyebrow">Surface</p>
+  <h2>API &amp; MCP tools</h2>
+  <p class="sub">Both call the same underlying logic. REST for humans/curl; MCP tools for the agent.</p>
+  <div class="twocol">
+    <div class="listcard">
+      <h4>REST (browser · curl)</h4>
+      <ul>
+        <li><code>POST /api/signup</code> · <code>POST /api/login</code></li>
+        <li><code>POST /api/keys</code> → api_key · <code>DELETE</code> revoke</li>
+        <li><code>GET /api/setups</code> — public list</li>
+        <li><code>GET /api/setups/{slug}</code> — + versions + effects</li>
+        <li><code>POST /api/setups</code> <em>(auth)</em> — create / bump</li>
+        <li><code>GET /api/setups/{slug}/download</code> — presigned S3 URL</li>
+      </ul>
+    </div>
+    <div class="listcard">
+      <h4>MCP tools (agent-native)</h4>
+      <ul>
+        <li><code>publish_setup(title, description, files, slug?)</code></li>
+        <li><code>preview_setup(slug)</code> → effects + file list</li>
+        <li><code>install_setup(slug)</code> → files + effects</li>
+        <li><code>list_setups(query?)</code> → incl. runs_code flag</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:14px;font-size:14px;color:var(--muted)"><strong>Publish semantics:</strong> new slug → create (owned by you) · your existing slug → bump version · someone else’s slug → <code>403</code>.</p>
+</section>
+
+<!-- DEPLOY -->
+<section id="deploy">
+  <p class="eyebrow">Deployment — the actual point</p>
+  <h2>One robust AWS stack</h2>
+  <p class="sub">One robust AWS cloud-native stack — the most architecture-rich target. (CI/CD done elsewhere; bare-metal VPS skipped.)</p>
+  <div class="grid c3">
+    <div class="card">
+      <span class="deck">Compute · edge</span>
+      <h4>EC2 + Nginx</h4>
+      <p>EC2 (Ubuntu) running gunicorn + uvicorn under <strong>systemd</strong>; <strong>Nginx</strong> reverse proxy + <strong>certbot</strong> TLS on the instance.</p>
+    </div>
+    <div class="card">
+      <span class="deck">Data</span>
+      <h4>RDS + S3</h4>
+      <p>Managed <strong>RDS</strong> Postgres for metadata; <strong>S3</strong> for bundle bytes, reached via the EC2 <strong>IAM role</strong> — no static keys on the box.</p>
+    </div>
+    <div class="card">
+      <span class="deck">Networking</span>
+      <h4>Security groups</h4>
+      <p>80/443 open · 22 from your IP only · RDS 5432 only from the EC2 group · S3 scoped by IAM. The real architecture, wired for real.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCOPE -->
+<section id="scope">
+  <p class="eyebrow">Scope</p>
+  <h2>In v1 vs deferred</h2>
+  <p class="sub">Everything deferred has a named trigger that pulls it back in — so the cut is honest, not arbitrary.</p>
+  <div class="twocol">
+    <div class="listcard in">
+      <h4>✓ In v1</h4>
+      <ul>
+        <li>Accounts (API-key auth)</li>
+        <li>Publish — versioned whole-environment bundle</li>
+        <li>Public feed + setup detail page</li>
+        <li>Pull / install</li>
+        <li>Agent self-push &amp; self-install (MCP)</li>
+        <li>Claude Code format only</li>
+      </ul>
+    </div>
+    <div class="listcard out">
+      <h4>◷ Deferred — add when…</h4>
+      <ul>
+        <li>Follows / likes / trending <small>recency-sort stops surfacing good setups</small></li>
+        <li>Multi-tool (Cursor/Codex/Gemini) <small>after Claude-only validates — it’s the moat vs Anthropic’s marketplace</small></li>
+        <li>Passwords / OAuth <small>before any real public launch</small></li>
+        <li>Object storage for bundles <small>bundles grow past a few MB</small></li>
+        <li>Search <small>feed outgrows one page</small></li>
+        <li>Teams / private setups <small>someone actually asks</small></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- MISSING -->
+<section id="missing">
+  <p class="eyebrow">Your turn</p>
+  <h2>What’s missing? Pressure-test it.</h2>
+  <p class="sub">The honest gaps. Some are now planned fast-follows (§11 in the spec); the rest are still open for your input.</p>
+
+  <div class="callout green">
+    <h4>✓ Decided: transparency-first install, responsibility on the user</h4>
+    <p>A setup bundle includes <code>hooks/</code> (shell commands) and <code>.mcp.json</code> (server processes), so installing one is effectively running someone’s code. <strong>v1’s answer is maximum visibility, not sandboxing:</strong> the server computes an <strong>effects manifest</strong> at publish (every hook + its exact command, every MCP server, a <code>runs_code</code> flag); on install the agent shows a diff vs your current <code>.claude/</code> and those exact commands, and waits for your explicit approval.</p>
+    <p style="margin:0">The platform makes effects as visible as possible; <strong>verifying safety is the user’s responsibility</strong>. If abuse appears later, the next lever is verified/signed authors — not server-side sandboxing.</p>
+  </div>
+
+  <div class="qlist">
+    <div class="q"><b>Dependency provisioning</b><span>A setup’s <code>.mcp.json</code> references MCP servers that still need installing + API keys. Installing the bundle doesn’t make them work. Do we surface “this setup needs X, Y, Z”?</span></div>
+    <div class="q"><b>Diff before you adopt <span style="color:var(--green)">· partly in v1</span></b><span>Install now shows a diff vs your current <code>.claude/</code>. Still open: <em>selective merge</em> rather than all-or-nothing overwrite.</span></div>
+    <div class="q"><b>Partial install</b><span>“I want their skills but not their hooks or their giant CLAUDE.md.” Is a setup all-or-nothing, or a pickable menu?</span></div>
+    <div class="q"><b>Secrets on publish</b><span>v1 flags obvious key patterns but doesn’t block. Is flag-only enough, or must publishing hard-fail on a detected secret?</span></div>
+    <div class="q"><b>Trust signal</b><span>“Popular setups from smart people” needs a reputation signal. Downloads alone are gameable. Verified accounts? GitHub-linked identity?</span></div>
+    <div class="q"><b>Forking &amp; attribution</b><span>If I improve someone’s setup, can I fork it with lineage back to the original — the thing that makes it feel social?</span></div>
+    <div class="q"><b>Compatibility</b><span>Setups may assume a Claude Code version or specific plugins. Do we record/check a compatibility floor?</span></div>
+    <div class="q"><b>The Anthropic question</b><span>If Anthropic bolts social onto their official marketplace, multi-tool is our only durable moat. Does that pull multi-tool earlier than v2?</span></div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  Spec: <code>docs/superpowers/specs/2026-06-30-agent-setup-hub-design.md</code> · working name <code>dothub</code> is a placeholder · v1 walkthrough for review.
+</div></footer>
+
+</body>
+</html>
