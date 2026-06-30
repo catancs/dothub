@@ -1,30 +1,110 @@
-<!doctype html><html><head><meta charset="utf-8"><title>{{ p.title }} — dothub</title>
-<style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 16px}
-code{background:#f3f3f5;padding:2px 5px;border-radius:4px}
-.notice{background:#fff8ec;border:1px solid #f1d9a8;padding:12px;border-radius:8px;color:#7c4a02}
-pre{background:#0f0f14;color:#e7e7f2;padding:12px;border-radius:8px;overflow:auto}</style>
-</head><body>
-<a href="/">← feed</a>
-<h1>{{ p.title }} <small>v{{ p.version }}</small></h1>
-<p class="author">by {{ p.author }}</p>
-<p>{{ p.description }}</p>
+{% extends "base.html" %}
+{% block title %}{{ p.title }} - dothub{% endblock %}
+{% block body %}
+<a class="back" href="/">back to discover</a>
 
-<h3>What this setup does</h3>
-{% if p.effects.runs_code %}
-<div class="notice"><strong>⚠ This setup runs code.</strong> Review the exact commands below before installing.
-Verifying it is safe is your responsibility — dothub shows effects but does not vet them.</div>
-{% else %}
-<div class="notice">No hooks or MCP servers. Still your responsibility to review before installing.</div>
-{% endif %}
+<div class="detail-head">
+  <div>
+    <h1>{{ p.title }}</h1>
+    <div class="detail-meta">
+      <span class="slug" style="font-size:13.5px"><b>{{ p.author }}</b>/{{ p.slug }}</span>
+      <span class="vtag">v{{ p.version }}</span>
+      <span class="who"><span class="mini">{{ p.author[:2]|upper }}</span>{{ p.author }}</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px">
+    {% if user and not is_owner %}
+    <button class="btn line" id="follow-btn" onclick="follow()">Follow {{ p.author }}</button>
+    {% endif %}
+    <a class="btn primary" href="/api/setups/{{ p.slug }}/download">Install</a>
+  </div>
+</div>
 
-{% if p.effects.hooks %}<h4>Hooks</h4><ul>
-{% for h in p.effects.hooks %}<li>{{ h.event }}: <code>{{ h.command }}</code></li>{% endfor %}
-</ul>{% endif %}
+<div class="panel">
+  <div class="panel-h"><h4>What this setup does</h4>
+    {% if p.effects.runs_code %}
+    <span class="chip code" style="margin-left:auto"><span class="pip"></span>runs code</span>
+    {% else %}
+    <span class="chip safe" style="margin-left:auto"><span class="pip"></span>no code</span>
+    {% endif %}
+  </div>
+  <div class="panel-b">
+    {% if p.effects.runs_code %}
+    <div class="banner danger"><span class="ico">!</span><div><b>This setup runs code on your machine.</b> Review the exact commands below before installing. dothub shows effects. Verifying they are safe is your responsibility.</div></div>
+    {% endif %}
+    {% for flag in p.effects.secret_flags %}
+    <div class="banner danger" style="margin-top:12px"><span class="ico">$</span><div><b>Possible secret detected.</b> <span class="mono" style="font-size:13px">{{ flag }}</span> Never install live tokens.</div></div>
+    {% endfor %}
 
-{% if p.effects.mcp_servers %}<h4>MCP servers</h4><ul>
-{% for m in p.effects.mcp_servers %}<li>{{ m.name }}: <code>{{ m.command }} {{ m.args|join(' ') }}</code></li>{% endfor %}
-</ul>{% endif %}
+    <div class="stat-row">
+      <div class="stat"><div class="n">{{ p.effects.hooks|length }}</div><div class="l">Hooks</div></div>
+      <div class="stat"><div class="n">{{ p.effects.counts.plugins }}</div><div class="l">Plugins</div></div>
+      <div class="stat"><div class="n">{{ p.effects.counts.skills }}</div><div class="l">Skills</div></div>
+      <div class="stat"><div class="n">{{ p.files|length }}</div><div class="l">Files</div></div>
+    </div>
 
-<h4>Files</h4><pre>{% for f in p.files %}{{ f }}
-{% endfor %}</pre>
-</body></html>
+    {% for h in p.effects.hooks %}
+    <div class="hook">
+      <div class="ev">{{ h.event }} hook</div>
+      <pre class="cmd">{{ h.command }}</pre>
+    </div>
+    {% endfor %}
+
+    {% if p.effects.plugins %}
+    <div class="hook">
+      <div class="ev">Plugins, pull and run third-party code</div>
+      {% for pl in p.effects.plugins %}
+      <div class="plug"><span class="pn">{{ pl.name }}</span><span class="pm">@{{ pl.marketplace }}</span><span class="psrc"><span class="gd"></span>github: {{ pl.source }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-h"><h4>Contents</h4><span class="metric" style="margin-left:auto">read every file before installing</span></div>
+  <div class="panel-b">
+    {% for cat, items in groups %}
+    <div class="cat">{{ cat }}</div>
+    {% for path, content in items %}
+    <details class="file">
+      <summary><span class="tw">&rsaquo;</span><span class="fp">{{ path }}</span></summary>
+      <pre>{{ content }}</pre>
+    </details>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-h"><h4>Version history</h4></div>
+  <div class="panel-b" style="padding-top:8px;padding-bottom:8px">
+    {% for v in versions %}
+    <div class="vrow">
+      <span class="vn">v{{ v.version }}</span>
+      <span class="vmeta">
+        {% if v.version == current %}<span class="cur">current</span>{% endif %}
+        <time>{{ v.created_at.strftime('%Y %m %d') }}</time>
+      </span>
+      {% if is_owner and v.version != current %}
+      <button class="rev" onclick="revert({{ v.version }})">Revert</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+function revert(n){
+  fetch("/api/setups/{{ p.slug }}/revert", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({version: n})
+  }).then(function(){ location.reload(); });
+}
+function follow(){
+  fetch("/api/follow/{{ p.author }}", {method: "POST"})
+    .then(function(){ location.reload(); });
+}
+</script>
+{% endblock %}
