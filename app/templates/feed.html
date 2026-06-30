@@ -6,7 +6,7 @@
 {% for s in setups %}
   <div class="card">
     <a href="/s/{{ s.slug }}"><strong>{{ s.title }}</strong></a>
-    — {{ s.downloads }} pulls
+    by {{ s.author }} — {{ s.downloads }} pulls
     {% if s.runs_code %}<span class="warn">⚠ runs code</span>{% endif %}
     <div>{{ s.description }}</div>
   </div>

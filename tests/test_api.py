@@ -17,7 +17,11 @@ def test_signup_login_key_publish_flow(client, s3):
     assert r.json()["slug"] == "my-flow"
 
     r = client.get("/api/setups")
-    assert any(s["slug"] == "my-flow" for s in r.json())
+    items = r.json()
+    assert any(s["slug"] == "my-flow" for s in items)
+    # author (owner's username) is exposed on each listing item
+    item = next(s for s in items if s["slug"] == "my-flow")
+    assert item["author"] == "cata"
 
 
 def test_publish_requires_auth(client, s3):

@@ -53,10 +53,12 @@ def publish(db, owner: User, title: str, description: str, files: dict, slug: st
 
 def preview(db, slug: str) -> dict:
     s, v = _load_latest(db, slug)
+    author = db.scalar(select(User.username).where(User.id == s.owner_id))
     files = bundle.unpack(storage.get_archive(v.archive_key))
     return {
         "slug": s.slug, "title": s.title, "description": s.description,
         "version": v.version, "effects": v.manifest_json, "files": sorted(files),
+        "author": author,
     }
 
 def install(db, slug: str) -> dict:
@@ -67,17 +69,18 @@ def install(db, slug: str) -> dict:
     return {"slug": s.slug, "version": v.version, "files": files, "effects": v.manifest_json}
 
 def list_setups(db, query: str | None = None, limit: int = 50) -> list[dict]:
-    stmt = select(Setup, SetupVersion).join(
+    stmt = select(Setup, SetupVersion, User.username).join(
         SetupVersion,
         (SetupVersion.setup_id == Setup.id) & (SetupVersion.version == Setup.latest_version),
-    ).where(Setup.is_public.is_(True))
+    ).join(User, User.id == Setup.owner_id).where(Setup.is_public.is_(True))
     if query:
         stmt = stmt.where(Setup.title.ilike(f"%{query}%"))
     stmt = stmt.order_by(Setup.downloads.desc(), Setup.created_at.desc()).limit(limit)
     out = []
-    for s, v in db.execute(stmt).all():
+    for s, v, username in db.execute(stmt).all():
         out.append({
             "slug": s.slug, "title": s.title, "description": s.description,
             "downloads": s.downloads, "runs_code": bool(v.manifest_json.get("runs_code")),
+            "author": username,
         })
     return out

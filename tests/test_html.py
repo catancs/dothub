@@ -9,6 +9,7 @@ def test_feed_lists_setup(client, s3):
     r = client.get("/")
     assert r.status_code == 200
     assert "My Flow" in r.text
+    assert "cata" in r.text  # author surfaced on the feed card
 
 def test_detail_shows_hook_command_and_notice(client, s3):
     _publish(client, s3)
