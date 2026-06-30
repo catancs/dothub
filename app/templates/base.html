@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}dothub{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="dot"></span>dothub</a>
+    <nav class="nav-links">
+      <a href="/">Discover</a>
+      {% if user %}
+      <a href="/?tab=following">Following</a>
+      <a href="/history">History</a>
+      <a href="/account">Account</a>
+      {% else %}
+      <a href="/login">Log in</a>
+      <a href="/signup">Sign up</a>
+      {% endif %}
+    </nav>
+    <div class="nav-right">
+      {% if user %}
+      <div class="avatar">{{ user.username[:2]|upper }}</div>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<main>
+{% block body %}{% endblock %}
+</main>
+
+</body>
+</html>

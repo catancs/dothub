@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from .db import init_db
 from .config import settings
 from .api import router as api_router
+from .web import router as web_router
 from .mcp_server import get_mcp_app
 
 
@@ -26,7 +29,9 @@ def create_app() -> FastAPI:
     def healthz():
         return {"status": "ok"}
 
+    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     app.include_router(api_router)
+    app.include_router(web_router)
     app.mount("/mcp", mcp_app)
     return app
 
