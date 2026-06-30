@@ -1,14 +1,55 @@
-<!doctype html><html><head><meta charset="utf-8"><title>dothub</title>
-<style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 16px}
-.card{border:1px solid #e5e5e5;border-radius:10px;padding:16px;margin:12px 0}
-.warn{color:#b45309;font-size:13px}</style></head><body>
-<h1>dothub — agent setups</h1>
-{% for s in setups %}
-  <div class="card">
-    <a href="/s/{{ s.slug }}"><strong>{{ s.title }}</strong></a>
-    by {{ s.author }} — {{ s.downloads }} pulls
-    {% if s.runs_code %}<span class="warn">⚠ runs code</span>{% endif %}
-    <div>{{ s.description }}</div>
+{% extends "base.html" %}
+{% block body %}
+<section class="screen active">
+  <div class="phead">
+    <div class="eyebrow">The agent setup hub</div>
+    <h1 class="big">Publish the <em>blueprint</em><br>of your agent.</h1>
+    <p class="sub">Share your whole Claude Code setup (skills, commands, hooks, MCP) as a versioned bundle. Read exactly how it works before you pull it in. One approval to install.</p>
   </div>
-{% endfor %}
-</body></html>
+
+  <div class="toolbar">
+    <div class="pills">
+      <a href="/?tab=discover&window={{ window }}"><button class="{{ 'on' if tab != 'following' else '' }}">Discover</button></a>
+      <a href="/?tab=following"><button class="{{ 'on' if tab == 'following' else '' }}">Following</button></a>
+    </div>
+    {% if tab != 'following' %}
+    <div class="win">
+      <a href="/?tab=discover&window=24h"><button class="{{ 'on' if window == '24h' else '' }}">24h</button></a>
+      <a href="/?tab=discover&window=7d"><button class="{{ 'on' if window == '7d' else '' }}">7d</button></a>
+      <a href="/?tab=discover&window=all"><button class="{{ 'on' if window == 'all' else '' }}">All</button></a>
+    </div>
+    {% endif %}
+  </div>
+  <label class="search" style="margin-bottom:22px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input placeholder="Search setups, people, skills">
+  </label>
+
+  <div class="grid">
+    {% for item in items %}
+    <a class="card{% if item.runs_code %} flag{% endif %}" href="/s/{{ item.slug }}">
+      <div class="card-top">
+        <div>
+          <h3><span class="rank">{{ "%02d"|format(loop.index) }}</span>{{ item.title }}</h3>
+          <div class="slug"><b>{{ item.author }}</b>/{{ item.slug }}</div>
+        </div>
+      </div>
+      <p class="desc">{{ item.description }}</p>
+      <div class="card-foot">
+        <span class="who"><span class="mini">{{ item.author[:2]|upper }}</span>{{ item.author }}</span>
+        {% if tab == 'following' %}
+        <span class="metric">{{ item.downloads }} pulls</span>
+        {% else %}
+        <span class="metric">{{ item.recent_pulls }} pulls / {{ window }}</span>
+        {% endif %}
+        {% if item.runs_code %}
+        <span class="chip code" style="margin-left:auto"><span class="pip"></span>runs code</span>
+        {% else %}
+        <span class="chip safe" style="margin-left:auto"><span class="pip"></span>no code</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
