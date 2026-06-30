@@ -87,10 +87,12 @@ def install_setup(slug: str) -> dict:
     """Return a setup's files + effects so the agent can write them locally.
 
     Only do this AFTER the user has reviewed the preview and approved.
+    Requires a valid `Authorization: Bearer <dothub-api-key>` header.
     """
     db = _open_session()
     try:
-        return setups.install(db, slug)
+        user = _require_user(db)
+        return setups.install(db, slug, user)
     finally:
         db.close()
 

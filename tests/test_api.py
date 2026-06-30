@@ -83,6 +83,8 @@ def test_login_flow(client, s3):
 def test_unknown_setup_returns_404(client, s3):
     r = client.get("/api/setups/does-not-exist")
     assert r.status_code == 404
+    # download is auth-gated now: sign up first so we reach 404 (not 401)
+    client.post("/api/signup", json={"username": "seek", "email": "seek@x.com", "password": "pw"})
     r = client.get("/api/setups/does-not-exist/download")
     assert r.status_code == 404
 

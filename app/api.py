@@ -1,17 +1,12 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .db import get_session
-from .models import User, ApiKey
+from .models import User, ApiKey, Follow
 from . import bundle, security, setups
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 class SignupIn(BaseModel):
     username: str
@@ -31,7 +26,7 @@ class PublishIn(BaseModel):
     slug: str | None = None
     files: dict[str, str]
 
-def current_user(request: Request, db: Session = Depends(get_session)) -> User:
+def _resolve_user(request: Request, db: Session) -> User | None:
     # 1) Bearer API key
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
@@ -42,10 +37,17 @@ def current_user(request: Request, db: Session = Depends(get_session)) -> User:
     # 2) session cookie
     uid = request.session.get("uid")
     if uid:
-        u = db.get(User, uid)
-        if u:
-            return u
-    raise HTTPException(status_code=401, detail="authentication required")
+        return db.get(User, uid)
+    return None
+
+def current_user(request: Request, db: Session = Depends(get_session)) -> User:
+    u = _resolve_user(request, db)
+    if u is None:
+        raise HTTPException(status_code=401, detail="authentication required")
+    return u
+
+def optional_user(request: Request, db: Session = Depends(get_session)) -> User | None:
+    return _resolve_user(request, db)
 
 @router.post("/api/signup")
 def signup(body: SignupIn, request: Request, db: Session = Depends(get_session)):
@@ -93,23 +95,59 @@ def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session
         raise HTTPException(status_code=403, detail="slug owned by another user")
 
 @router.get("/api/setups/{slug}/download")
-def api_download(slug: str, db: Session = Depends(get_session)):
+def api_download(slug: str, user: User = Depends(current_user), db: Session = Depends(get_session)):
     from .storage import presign_get
     try:
-        res = setups.install(db, slug)  # increments downloads
+        res = setups.install(db, slug, user)  # increments downloads + records a pull
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
     s, v = setups._load_latest(db, slug)
     return {"url": presign_get(v.archive_key), "version": res["version"]}
 
-@router.get("/", response_class=HTMLResponse)
-def html_feed(request: Request, db: Session = Depends(get_session)):
-    return templates.TemplateResponse("feed.html", {"request": request, "setups": setups.list_setups(db)})
+class RevertIn(BaseModel):
+    version: int
 
-@router.get("/s/{slug}", response_class=HTMLResponse)
-def html_detail(slug: str, request: Request, db: Session = Depends(get_session)):
+@router.post("/api/setups/{slug}/revert")
+def api_revert(slug: str, body: RevertIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
     try:
-        p = setups.preview(db, slug)
+        return setups.revert(db, user, slug, body.version)
+    except setups.OwnershipError:
+        raise HTTPException(status_code=403, detail="not your setup")
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
-    return templates.TemplateResponse("detail.html", {"request": request, "p": p})
+
+@router.post("/api/follow/{username}")
+def api_follow(username: str, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    target = db.scalar(select(User).where(User.username == username))
+    if not target:
+        raise HTTPException(status_code=404, detail="no such user")
+    if target.id == user.id:
+        raise HTTPException(status_code=400, detail="cannot follow yourself")
+    exists = db.scalar(select(Follow).where(Follow.follower_id == user.id, Follow.followee_id == target.id))
+    if not exists:
+        db.add(Follow(follower_id=user.id, followee_id=target.id)); db.commit()
+    return {"following": True, "username": username}
+
+@router.delete("/api/follow/{username}")
+def api_unfollow(username: str, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    target = db.scalar(select(User).where(User.username == username))
+    if not target:
+        raise HTTPException(status_code=404, detail="no such user")
+    f = db.scalar(select(Follow).where(Follow.follower_id == user.id, Follow.followee_id == target.id))
+    if f:
+        db.delete(f); db.commit()
+    return {"following": False, "username": username}
+
+class AccountIn(BaseModel):
+    display_name: str | None = None
+    bio: str | None = None
+    link_github: str | None = None
+    link_linkedin: str | None = None
+    link_x: str | None = None
+
+@router.post("/api/account")
+def api_account(body: AccountIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    for field in ("display_name", "bio", "link_github", "link_linkedin", "link_x"):
+        setattr(user, field, getattr(body, field))
+    db.commit()
+    return {"ok": True}
