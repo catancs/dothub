@@ -17,5 +17,9 @@ venv/
 *.env
 !.env.example
 
+# Local dev artifacts (zero-infra mode)
+*.db
+dev-bundles/
+
 # OS
 .DS_Store
