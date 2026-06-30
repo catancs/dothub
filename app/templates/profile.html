@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.display_name or profile.username }} · dothub{% endblock %}
+{% block body %}
+<div class="profile-hero">
+  <div class="pf-av">{{ (profile.display_name or profile.username)[:2]|upper }}</div>
+  <div style="flex:1;min-width:240px">
+    <div class="pf-name">{{ profile.display_name or profile.username }}</div>
+    <div class="pf-handle">@{{ profile.username }}</div>
+    {% if profile.bio %}<p class="sub" style="margin-top:8px">{{ profile.bio }}</p>{% endif %}
+    <div class="pf-stats">
+      <span><b>{{ counts.setups }}</b> setups</span>
+      <span><b>{{ counts.followers }}</b> followers</span>
+      <span><b>{{ counts.following }}</b> following</span>
+    </div>
+    <div class="socials">
+      {% if profile.link_linkedin %}<a class="soc li" href="{{ profile.link_linkedin }}" rel="noopener noreferrer nofollow"><span class="g"></span>LinkedIn</a>{% endif %}
+      {% if profile.link_github %}<a class="soc gh" href="{{ profile.link_github }}" rel="noopener noreferrer nofollow"><span class="g"></span>GitHub</a>{% endif %}
+      {% if profile.link_x %}<a class="soc x" href="{{ profile.link_x }}" rel="noopener noreferrer nofollow"><span class="g"></span>X</a>{% endif %}
+    </div>
+  </div>
+  {% if can_follow %}
+  <button class="btn {% if is_following %}line{% else %}primary{% endif %}" id="follow-btn" data-following="{{ 'true' if is_following else 'false' }}">{{ 'Unfollow' if is_following else 'Follow' }}</button>
+  {% elif is_self %}
+  <a class="btn line" href="/account">Edit profile</a>
+  {% endif %}
+</div>
+
+<div class="section-label">Setups</div>
+{% if setups %}
+<div class="grid">
+  {% for item in setups %}
+  <a class="card{% if item.runs_code %} flag{% endif %}" href="/s/{{ item.setup.slug }}">
+    <div class="card-top">
+      <div>
+        <h3>{{ item.setup.title }}</h3>
+        <div class="slug"><b>{{ profile.username }}</b>/{{ item.setup.slug }}</div>
+      </div>
+      <span class="vtag">v{{ item.setup.latest_version }}</span>
+    </div>
+    <div class="card-foot">
+      <span class="metric">{{ item.setup.downloads }} pulls</span>
+      {% if item.runs_code %}
+      <span class="chip code" style="margin-left:auto"><span class="pip"></span>runs code</span>
+      {% else %}
+      <span class="chip safe" style="margin-left:auto"><span class="pip"></span>no code</span>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="sub">No public setups yet.</p>
+{% endif %}
+
+{% if can_follow %}
+<script>
+document.getElementById('follow-btn').addEventListener('click', async function () {
+  const following = this.dataset.following === 'true';
+  this.disabled = true;
+  try {
+    const r = await fetch('/api/follow/{{ profile.username }}', {
+      method: following ? 'DELETE' : 'POST'
+    });
+    if (!r.ok) throw new Error('request failed');
+    location.reload();
+  } catch (e) {
+    this.disabled = false;
+  }
+});
+</script>
+{% endif %}
+{% endblock %}
