@@ -29,6 +29,41 @@ def test_publish_requires_auth(client, s3):
     assert r.status_code == 401
 
 
+def test_publish_bad_bundle_returns_400(client, s3):
+    # signup mints a session; mint a Bearer key mirroring the publish-flow test
+    r = client.post("/api/signup", json={"username": "bad", "email": "bad@x.com", "password": "pw"})
+    assert r.status_code == 200
+    key = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
+
+    # path-traversal in files -> bundle.BundleError -> HTTP 400 (not 500)
+    r = client.post("/api/setups",
+                    headers={"Authorization": f"Bearer {key}"},
+                    json={"title": "Bad Bundle", "description": "d",
+                          "files": {"../evil.md": "x"}})
+    assert r.status_code == 400
+
+
+def test_publish_to_others_slug_returns_403(client, s3):
+    # user A publishes slug "x"
+    ra = client.post("/api/signup", json={"username": "alice", "email": "alice@x.com", "password": "pw"})
+    assert ra.status_code == 200
+    key_a = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
+    r = client.post("/api/setups",
+                    headers={"Authorization": f"Bearer {key_a}"},
+                    json={"title": "x", "description": "d", "files": {"CLAUDE.md": "a"}})
+    assert r.status_code == 200
+    assert r.json()["slug"] == "x"
+
+    # user B (different account + own key) tries to publish the same slug -> 403
+    rb = client.post("/api/signup", json={"username": "bob", "email": "bob@x.com", "password": "pw"})
+    assert rb.status_code == 200
+    key_b = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
+    r = client.post("/api/setups",
+                    headers={"Authorization": f"Bearer {key_b}"},
+                    json={"title": "x", "description": "d", "files": {"CLAUDE.md": "b"}})
+    assert r.status_code == 403
+
+
 def test_duplicate_signup_rejected(client, s3):
     client.post("/api/signup", json={"username": "a", "email": "a@x.com", "password": "p"})
     r = client.post("/api/signup", json={"username": "a", "email": "a@x.com", "password": "p"})

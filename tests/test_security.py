@@ -3,6 +3,8 @@ def test_password_hash_verify():
     h = hash_password("hunter2")
     assert verify_password("hunter2", h) is True
     assert verify_password("wrong", h) is False
+    # malformed stored hash -> ValueError branch -> False (not an exception)
+    assert verify_password("anything", "not-a-valid-bcrypt-hash") is False
 
 def test_api_key_generation_and_hash():
     from app.security import generate_api_key, hash_api_key

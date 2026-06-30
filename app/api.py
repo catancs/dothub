@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .db import get_session
 from .models import User, ApiKey
-from . import security, setups
+from . import bundle, security, setups
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -87,6 +87,8 @@ def api_get(slug: str, db: Session = Depends(get_session)):
 def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
     try:
         return setups.publish(db, user, body.title, body.description, body.files, body.slug)
+    except bundle.BundleError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except setups.OwnershipError:
         raise HTTPException(status_code=403, detail="slug owned by another user")
 
