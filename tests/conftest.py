@@ -32,7 +32,9 @@ def s3():
 def client():
     from app.db import Base, engine
     Base.metadata.create_all(engine)
-    from app.main import app
-    with TestClient(app) as c:
+    # Build a fresh app per test: the FastMCP streamable-http session manager
+    # can only run once per instance, so each test needs its own lifespan.
+    from app.main import create_app
+    with TestClient(create_app()) as c:
         yield c
     Base.metadata.drop_all(engine)

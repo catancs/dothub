@@ -1,22 +1,34 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 from .db import init_db
 from .config import settings
 from .api import router as api_router
+from .mcp_server import get_mcp_app
+
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="dothub")
-    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+    mcp_app = get_mcp_app()
 
-    @app.on_event("startup")
-    def _startup():
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Initialize our DB, then enter the MCP app's lifespan so its session
+        # manager is started (required for /mcp requests to work).
         init_db()
+        async with mcp_app.lifespan(app):
+            yield
+
+    app = FastAPI(title="dothub", lifespan=lifespan)
+    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
     @app.get("/healthz")
     def healthz():
         return {"status": "ok"}
 
     app.include_router(api_router)
+    app.mount("/mcp", mcp_app)
     return app
+
 
 app = create_app()
