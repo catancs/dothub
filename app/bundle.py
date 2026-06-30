@@ -95,11 +95,29 @@ def effects_manifest(files: dict[str, str]) -> dict:
         except (ValueError, AttributeError):
             pass
 
+    plugins = []
+    if "plugins.json" in files:
+        try:
+            doc = json.loads(files["plugins.json"])
+            markets = doc.get("marketplaces", {})
+            for p in doc.get("plugins", []):
+                if not p.get("enabled", True):
+                    continue
+                mk = markets.get(p.get("marketplace", ""), {})
+                plugins.append({
+                    "name": p.get("name", ""),
+                    "marketplace": p.get("marketplace", ""),
+                    "source": mk.get("repo", ""),
+                })
+        except (ValueError, AttributeError):
+            pass
+
     counts = {
         "skills": sum(1 for p in files if p.startswith("skills/") and p.endswith("SKILL.md")),
         "commands": sum(1 for p in files if p.startswith("commands/")),
         "agents": sum(1 for p in files if p.startswith("agents/")),
         "rules": sum(1 for p in files if p == "CLAUDE.md" or p.startswith(".claude/rules/")),
+        "plugins": len(plugins),
     }
 
     secret_flags = []
@@ -112,8 +130,9 @@ def effects_manifest(files: dict[str, str]) -> dict:
     return {
         "hooks": hooks,
         "mcp_servers": mcp_servers,
+        "plugins": plugins,
         "counts": counts,
-        "runs_code": bool(hooks or mcp_servers),
+        "runs_code": bool(hooks or mcp_servers or plugins),
         "secret_flags": secret_flags,
     }
 
