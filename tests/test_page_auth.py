@@ -57,11 +57,21 @@ def test_login_with_correct_credentials(client):
 
     r = client.post(
         "/login",
-        data={"email": "carol@example.com", "password": "pw12345"},
+        data={"identifier": "carol@example.com", "password": "pw12345"},
         follow_redirects=False,
     )
     assert r.status_code == 303
     assert r.headers["location"] == "/"
+    assert _authed(client)
+
+    # login also works with the username, not just the email
+    client.post("/logout", follow_redirects=False)
+    r2 = client.post(
+        "/login",
+        data={"identifier": "carol", "password": "pw12345"},
+        follow_redirects=False,
+    )
+    assert r2.status_code == 303
     assert _authed(client)
 
 
@@ -75,9 +85,9 @@ def test_login_with_wrong_password_returns_401(client):
 
     r = client.post(
         "/login",
-        data={"email": "dave@example.com", "password": "WRONG"},
+        data={"identifier": "dave@example.com", "password": "WRONG"},
         follow_redirects=False,
     )
     assert r.status_code == 401
-    assert "Wrong email or password" in r.text
+    assert "did not match" in r.text
     assert not _authed(client)

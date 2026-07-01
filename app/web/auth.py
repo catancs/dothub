@@ -20,16 +20,19 @@ def login_page(request: Request, user: User | None = Depends(optional_user)):
 @router.post("/login")
 def login_submit(
     request: Request,
-    email: str = Form(...),
+    identifier: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_session),
 ):
-    user = db.scalar(select(User).where(User.email == email))
+    ident = identifier.strip()
+    user = db.scalar(
+        select(User).where((User.email == ident) | (User.username == ident))
+    )
     if user is None or not security.verify_password(password, user.password_hash):
         resp = render(
             request,
             "login.html",
-            {"error": "Wrong email or password. Please try again."},
+            {"error": "Those credentials did not match. Please try again."},
         )
         resp.status_code = 401
         return resp
