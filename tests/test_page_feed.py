@@ -3,7 +3,7 @@ import app.models  # noqa: register tables
 
 def _signup_and_publish(client):
     r = client.post("/api/signup", json={
-        "username": "cata", "email": "cata@x.com", "password": "pw"})
+        "username": "cata", "email": "cata@x.com", "password": "pw123456"})
     assert r.status_code == 200
     r = client.post("/api/setups", json={
         "title": "TDD Discipline",

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from .db import get_session
 from .models import User, ApiKey, Follow
 from . import bundle, security, setups
+from .validation import validate_signup
 
 router = APIRouter()
 
@@ -51,6 +52,10 @@ def optional_user(request: Request, db: Session = Depends(get_session)) -> User 
 
 @router.post("/api/signup")
 def signup(body: SignupIn, request: Request, db: Session = Depends(get_session)):
+    try:
+        validate_signup(body.username, body.email, body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     exists = db.scalar(select(User).where((User.username == body.username) | (User.email == body.email)))
     if exists:
         raise HTTPException(status_code=400, detail="username or email taken")

@@ -8,6 +8,7 @@ from app.models import User
 from app import security
 from app.web._render import render
 from app.api import optional_user
+from app.validation import validate_signup
 
 router = APIRouter()
 
@@ -53,6 +54,12 @@ def signup_submit(
     password: str = Form(...),
     db: Session = Depends(get_session),
 ):
+    try:
+        validate_signup(username, email, password)
+    except ValueError as e:
+        resp = render(request, "signup.html", {"error": str(e)})
+        resp.status_code = 400
+        return resp
     exists = db.scalar(
         select(User).where((User.username == username) | (User.email == email))
     )
