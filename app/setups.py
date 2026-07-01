@@ -99,13 +99,22 @@ def install(db, slug: str, user: User | None = None) -> dict:
     return {"slug": s.slug, "version": v.version, "files": files, "effects": v.manifest_json}
 
 def list_setups(db, query: str | None = None, limit: int = 50,
-                window: str | None = None, following_of: User | None = None) -> list[dict]:
+                window: str | None = None, following_of: User | None = None,
+                runs_code: bool | None = None, tag: str | None = None) -> list[dict]:
     stmt = select(Setup, SetupVersion, User.username).join(
         SetupVersion,
         (SetupVersion.setup_id == Setup.id) & (SetupVersion.version == Setup.latest_version),
     ).join(User, User.id == Setup.owner_id).where(Setup.is_public.is_(True))
     if query:
         stmt = stmt.where(Setup.title.ilike(f"%{query}%"))
+
+    # runs_code and tag filter on SetupVersion.manifest_json. Applied in
+    # Python after the limited query (see below) rather than via json_extract
+    # in SQL: json_extract is SQLite-specific and the boolean comparison is
+    # finicky (SQLite stores JSON booleans as 0/1), so a Python-side filter on
+    # the deserialized manifest is correct on both SQLite (dev/test) and
+    # Postgres (prod). Caveat: a tight filter combined with limit may
+    # under-return; acceptable for v1 discovery.
 
     delta = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}.get(window)
     since = _now() - delta if delta else None
@@ -128,10 +137,17 @@ def list_setups(db, query: str | None = None, limit: int = 50,
 
     out = []
     for s, v, username, recent in db.execute(stmt.limit(limit)).all():
+        tags = v.manifest_json.get("tags", []) if v.manifest_json else []
         out.append({
             "slug": s.slug, "title": s.title, "description": s.description,
             "downloads": s.downloads, "recent_pulls": recent,
-            "runs_code": bool(v.manifest_json.get("runs_code")),
-            "author": username,
+            "runs_code": bool(v.manifest_json.get("runs_code")) if v.manifest_json else False,
+            "author": username, "tags": tags,
         })
+    # Post-filter runs_code and tag in Python on the deserialized manifest,
+    # after the limited query (see comment above).
+    if runs_code is not None:
+        out = [o for o in out if o["runs_code"] == runs_code]
+    if tag is not None:
+        out = [o for o in out if tag in o["tags"]]
     return out
