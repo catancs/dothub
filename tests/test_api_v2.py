@@ -30,7 +30,7 @@ def test_anonymous_download_returns_401(client, s3):
     from app.main import create_app
     from fastapi.testclient import TestClient
     with TestClient(create_app()) as anon:
-        r = anon.get("/api/setups/real-flow/download")
+        r = anon.post("/api/setups/real-flow/download")
         assert r.status_code == 401
 
 
@@ -41,7 +41,7 @@ def test_authenticated_download_records_pull(client, s3, db):
     _signup(client, "puller")
     _publish(client, "Pull Flow")
 
-    r = client.get("/api/setups/pull-flow/download")
+    r = client.post("/api/setups/pull-flow/download")
     assert r.status_code == 200
     body = r.json()
     assert "url" in body

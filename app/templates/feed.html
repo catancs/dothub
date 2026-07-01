@@ -9,14 +9,14 @@
 
   <div class="toolbar">
     <div class="pills">
-      <a href="/?tab=discover&window={{ window }}"><button class="{{ 'on' if tab != 'following' else '' }}">Discover</button></a>
-      <a href="/?tab=following"><button class="{{ 'on' if tab == 'following' else '' }}">Following</button></a>
+      <a href="/?tab=discover&window={{ window }}" class="{{ 'on' if tab != 'following' else '' }}">Discover</a>
+      <a href="/?tab=following" class="{{ 'on' if tab == 'following' else '' }}">Following</a>
     </div>
     {% if tab != 'following' %}
     <div class="win">
-      <a href="/?tab=discover&window=24h"><button class="{{ 'on' if window == '24h' else '' }}">24h</button></a>
-      <a href="/?tab=discover&window=7d"><button class="{{ 'on' if window == '7d' else '' }}">7d</button></a>
-      <a href="/?tab=discover&window=all"><button class="{{ 'on' if window == 'all' else '' }}">All</button></a>
+      <a href="/?tab=discover&window=24h" class="{{ 'on' if window == '24h' else '' }}">24h</a>
+      <a href="/?tab=discover&window=7d" class="{{ 'on' if window == '7d' else '' }}">7d</a>
+      <a href="/?tab=discover&window=all" class="{{ 'on' if window == 'all' else '' }}">All</a>
     </div>
     {% endif %}
   </div>

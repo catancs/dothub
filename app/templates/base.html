@@ -15,11 +15,11 @@
   <div class="nav-in">
     <a class="brand" href="/"><span class="dot"></span>dothub</a>
     <nav class="nav-links">
-      <a href="/">Discover</a>
+      <a href="/" class="{% if request.url.path == '/' %}on{% endif %}">Discover</a>
       {% if user %}
       <a href="/?tab=following">Following</a>
-      <a href="/history">History</a>
-      <a href="/account">Account</a>
+      <a href="/history" class="{% if request.url.path == '/history' %}on{% endif %}">History</a>
+      <a href="/account" class="{% if request.url.path == '/account' %}on{% endif %}">Account</a>
       {% else %}
       <a href="/login">Log in</a>
       <a href="/signup">Sign up</a>
@@ -28,6 +28,7 @@
     <div class="nav-right">
       {% if user %}
       <div class="avatar">{{ user.username[:2]|upper }}</div>
+      <form method="post" action="/logout" style="display:inline"><button type="submit" class="ghost-btn">Log out</button></form>
       {% endif %}
     </div>
   </div>

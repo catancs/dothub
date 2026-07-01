@@ -24,7 +24,7 @@ def test_history_shows_push_and_pull(client, s3):
     pulled_slug = _publish(client, "Pulled Flow")           # this one we will also pull
 
     # download requires auth; the session cookie from signup covers it -> records a pull
-    r = client.get(f"/api/setups/{pulled_slug}/download")
+    r = client.post(f"/api/setups/{pulled_slug}/download")
     assert r.status_code == 200, r.text
 
     r = client.get("/history")
@@ -43,7 +43,7 @@ def test_history_filter_pulled_excludes_push_only(client, s3):
     pushed_slug = _publish(client, "Bob Pushed Only")       # push-only, never pulled
     pulled_slug = _publish(client, "Bob Pulled Flow")
 
-    r = client.get(f"/api/setups/{pulled_slug}/download")
+    r = client.post(f"/api/setups/{pulled_slug}/download")
     assert r.status_code == 200, r.text
 
     r = client.get("/history?filter=pulled")

@@ -94,7 +94,7 @@ def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session
     except setups.OwnershipError:
         raise HTTPException(status_code=403, detail="slug owned by another user")
 
-@router.get("/api/setups/{slug}/download")
+@router.post("/api/setups/{slug}/download")
 def api_download(slug: str, user: User = Depends(current_user), db: Session = Depends(get_session)):
     from .storage import presign_get
     try:

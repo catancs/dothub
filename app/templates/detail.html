@@ -16,7 +16,7 @@
     {% if user and not is_owner %}
     <button class="btn line" id="follow-btn" onclick="follow()">Follow {{ p.author }}</button>
     {% endif %}
-    <a class="btn primary" href="/api/setups/{{ p.slug }}/download">Install</a>
+    <button class="btn primary" id="install-btn" onclick="install()">Install</button>
   </div>
 </div>
 
@@ -101,6 +101,13 @@ function revert(n){
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({version: n})
   }).then(function(){ location.reload(); });
+}
+function install(){
+  fetch("/api/setups/{{ p.slug }}/download", {method: "POST"})
+    .then(function(r){
+      if(r.status === 401){ window.location = "/login"; return; }
+      return r.json().then(function(d){ window.location = d.url; });
+    });
 }
 function follow(){
   fetch("/api/follow/{{ p.author }}", {method: "POST"})

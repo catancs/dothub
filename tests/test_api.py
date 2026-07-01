@@ -85,7 +85,7 @@ def test_unknown_setup_returns_404(client, s3):
     assert r.status_code == 404
     # download is auth-gated now: sign up first so we reach 404 (not 401)
     client.post("/api/signup", json={"username": "seek", "email": "seek@x.com", "password": "pw"})
-    r = client.get("/api/setups/does-not-exist/download")
+    r = client.post("/api/setups/does-not-exist/download")
     assert r.status_code == 404
 
 
@@ -111,7 +111,7 @@ def test_list_ordering_and_runs_code(client, s3):
     assert r.json()["slug"] == "hooky-flow"
 
     # bump downloads on the plain setup so it sorts first (downloads desc)
-    r = client.get("/api/setups/plain-flow/download")
+    r = client.post("/api/setups/plain-flow/download")
     assert r.status_code == 200
     assert "url" in r.json()
 
