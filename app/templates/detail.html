@@ -20,6 +20,17 @@
   </div>
 </div>
 
+<div class="panel" id="install-help" style="display:none">
+  <div class="panel-h"><h4>Install this setup</h4></div>
+  <div class="panel-b">
+    <p class="sub" style="margin-top:0;font-size:14px">dothub does not touch your machine. Your agent installs the setup after you approve the effects below, and installing runs those effects, so reviewing them is your responsibility.</p>
+    <div class="hook"><div class="ev">In a Claude Code session with the dothub MCP server added, say</div>
+      <pre class="cmd">install {{ p.slug }}</pre></div>
+    <div class="hook"><div class="ev">First time? Mint an API key on your Account page, then add dothub</div>
+      <pre class="cmd">claude mcp add --transport http dothub {{ request.base_url }}mcp/ --header "Authorization: Bearer dh_your_key"</pre></div>
+  </div>
+</div>
+
 <div class="panel">
   <div class="panel-h"><h4>What this setup does</h4>
     {% if p.effects.runs_code %}
@@ -103,11 +114,9 @@ function revert(n){
   }).then(function(){ location.reload(); });
 }
 function install(){
-  fetch("/api/setups/{{ p.slug }}/download", {method: "POST"})
-    .then(function(r){
-      if(r.status === 401){ window.location = "/login"; return; }
-      return r.json().then(function(d){ window.location = d.url; });
-    });
+  var el = document.getElementById("install-help");
+  el.style.display = (el.style.display === "none") ? "block" : "none";
+  if(el.style.display === "block"){ el.scrollIntoView({behavior: "smooth", block: "nearest"}); }
 }
 function follow(){
   fetch("/api/follow/{{ p.author }}", {method: "POST"})
