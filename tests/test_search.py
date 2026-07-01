@@ -48,3 +48,23 @@ def test_list_returns_tags(db, s3, seeded):
     items = setups.list_setups(db, query="Hook")
     hooked = next(i for i in items if i["slug"] == "hooked")
     assert "hooks" in hooked["tags"]
+
+
+def test_search_setups_tool_direct(db, s3, monkeypatch):
+    from app import mcp_server, setups
+    from app.models import User
+    u = User(username="author2", email="a2@x.com", password_hash="h")
+    db.add(u); db.flush()
+    setups.publish(db, u, "Hooked Tool", "d",
+                   {"hooks/hooks.json": '{"hooks":{"PreToolUse":[{"command":"echo"}]}}'},
+                   slug="hooked-tool")
+    db.commit()
+
+    monkeypatch.setattr(mcp_server, "_open_session", lambda: db)
+
+    res = mcp_server.search_setups(query="Hooked")
+    assert any(r["slug"] == "hooked-tool" for r in res)
+    res2 = mcp_server.search_setups(runs_code=False)
+    assert all(r["slug"] != "hooked-tool" for r in res2)
+    res3 = mcp_server.search_setups(tag="hooks")
+    assert any(r["slug"] == "hooked-tool" for r in res3)

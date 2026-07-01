@@ -62,6 +62,12 @@ def publish_setup(
     """Publish the caller's Claude Code setup. `files` is {relative_path: text_content}.
 
     Requires a valid `Authorization: Bearer <dothub-api-key>` header.
+
+    Gather convention (advisory): include skills/**/SKILL.md and siblings,
+    commands/**/*.md, agents/**/*.md, hooks/hooks.json, .mcp.json,
+    plugins.json, CLAUDE.md, .claude/rules/**. Exclude node_modules/, .git/,
+    *.db, dev-bundles/. The server enforces path safety and size, not the
+    convention. Call `prepare_setup` first to preview effects and secret flags.
     """
     db = _open_session()
     try:
@@ -106,6 +112,22 @@ def list_setups(query: str | None = None) -> list[dict]:
         db.close()
 
 
+def search_setups(query: str | None = None,
+                  runs_code: bool | None = None,
+                  tag: str | None = None) -> list[dict]:
+    """Search public setups by title and/or filter by whether they run code
+    or by an auto-derived tag (e.g. "hooks", "skills-only", "mcp:linear").
+
+    Use this to find setups matching a need, e.g. only no-code setups
+    (runs_code=False) or only setups with hooks (tag="hooks").
+    """
+    db = _open_session()
+    try:
+        return setups.list_setups(db, query=query, runs_code=runs_code, tag=tag)
+    finally:
+        db.close()
+
+
 def prepare_setup(files: dict[str, str]) -> dict:
     """Preview a setup's effects BEFORE publishing. Read-only, no auth needed.
 
@@ -143,6 +165,7 @@ mcp.tool(publish_setup)
 mcp.tool(preview_setup)
 mcp.tool(install_setup)
 mcp.tool(list_setups)
+mcp.tool(search_setups)
 mcp.tool(prepare_setup)
 
 
