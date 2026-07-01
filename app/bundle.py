@@ -142,13 +142,30 @@ def effects_manifest(files: dict[str, str]) -> dict:
                 secret_flags.append(f"{path}: matched {pat}")
                 break
 
+    runs_code = bool(hooks or mcp_servers or plugins)
+
+    tags: list[str] = []
+    if hooks:
+        tags.append("hooks")
+    for srv in mcp_servers:
+        tags.append(f"mcp:{srv['name']}")
+    if plugins:
+        tags.append("plugins")
+    if not runs_code:
+        tags.append("skills-only")
+    if counts["commands"] > 0:
+        tags.append("commands")
+    if counts["agents"] > 0:
+        tags.append("agents")
+
     return {
         "hooks": hooks,
         "mcp_servers": mcp_servers,
         "plugins": plugins,
         "counts": counts,
-        "runs_code": bool(hooks or mcp_servers or plugins),
+        "runs_code": runs_code,
         "secret_flags": secret_flags,
+        "tags": tags,
     }
 
 
