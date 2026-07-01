@@ -10,5 +10,6 @@ class Settings:
     base_url = os.getenv("BASE_URL", "http://localhost:8000")
     session_secret = os.getenv("SESSION_SECRET", "dev-secret-change-me")
     max_bundle_bytes = int(os.getenv("MAX_BUNDLE_BYTES", str(5 * 1024 * 1024)))
+    max_file_bytes = int(os.getenv("MAX_FILE_BYTES", str(1024 * 1024)))
 
 settings = Settings()

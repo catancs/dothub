@@ -22,7 +22,10 @@ SECRET_PATTERNS = [
 ]
 
 
-def validate_files(files: dict[str, str], max_bytes: int, max_files: int = 500) -> None:
+def validate_files(files: dict[str, str], max_bytes: int, max_files: int = 500,
+                   max_file_bytes: int | None = None) -> None:
+    from .config import settings
+    per_file = max_file_bytes if max_file_bytes is not None else settings.max_file_bytes
     if not files:
         raise BundleError("empty bundle")
     if len(files) > max_files:
@@ -36,7 +39,10 @@ def validate_files(files: dict[str, str], max_bytes: int, max_files: int = 500) 
         norm = normpath(path)
         if norm.startswith("..") or norm.startswith("/") or ".." in norm.split("/"):
             raise BundleError(f"path escapes bundle root: {path}")
-        total += len(content.encode("utf-8"))
+        size = len(content.encode("utf-8"))
+        if size > per_file:
+            raise BundleError(f"file too large: {path} ({size} > {per_file} bytes)")
+        total += size
     if total > max_bytes:
         raise BundleError(f"bundle too large ({total} > {max_bytes} bytes)")
 

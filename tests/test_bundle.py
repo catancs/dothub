@@ -69,3 +69,19 @@ def test_secret_patterns_catch_github_slack_anthropic_google():
     assert "b.txt" in paths       # sk-ant-
     assert "c.txt" in paths       # AIza
     assert "d.txt" in paths       # AKIA (existing, must still match)
+
+
+def test_validate_files_rejects_single_oversized_file():
+    from app.bundle import validate_files, BundleError
+    big = "a/" + "x" * 50
+    files = {"small.txt": "ok", "big.txt": "x" * 100}
+    # total under cap, but big.txt over a 50-byte per-file cap
+    with __import__("pytest").raises(BundleError, match="file too large"):
+        validate_files(files, max_bytes=10_000, max_file_bytes=50)
+
+
+def test_validate_files_accepts_when_under_per_file_cap():
+    from app.bundle import validate_files
+    files = {"a.txt": "ok"}
+    validate_files(files, max_bytes=10_000, max_file_bytes=50)  # no raise
+
