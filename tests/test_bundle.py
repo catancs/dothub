@@ -49,3 +49,23 @@ def test_secret_flag_no_false_positive_midword():
 
 def test_slugify():
     assert slugify("My Cool Flow!") == "my-cool-flow"
+
+
+from app.bundle import effects_manifest, SECRET_PATTERNS
+
+
+def test_secret_patterns_catch_github_slack_anthropic_google():
+    files = {
+        "CLAUDE.md": "token is ghp_0123456789abcdef0123456789abcdef0123",
+        "a.txt": "slack xoxb-1234567890-abcdef",
+        "b.txt": "anthropic sk-ant-abc123def456",
+        "c.txt": "google AIzaSyA" + "B" * 30,
+        "d.txt": "aws AKIAIOSFODNN7EXAMPLE",
+    }
+    m = effects_manifest(files)
+    paths = {f.split(":")[0] for f in m["secret_flags"]}
+    assert "CLAUDE.md" in paths   # ghp_
+    assert "a.txt" in paths       # xoxb-
+    assert "b.txt" in paths       # sk-ant-
+    assert "c.txt" in paths       # AIza
+    assert "d.txt" in paths       # AKIA (existing, must still match)

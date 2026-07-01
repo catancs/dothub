@@ -10,7 +10,16 @@ class BundleError(ValueError):
     pass
 
 
-SECRET_PATTERNS = [r"(?<![A-Za-z0-9])sk-[A-Za-z0-9]{8,}", r"AKIA[0-9A-Z]{16}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"]
+SECRET_PATTERNS = [
+    r"(?<![A-Za-z0-9])sk-[A-Za-z0-9]{8,}",          # generic sk- (OpenAI-style)
+    r"(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_\-]{8,}",   # Anthropic
+    r"ghp_[A-Za-z0-9]{20,}",                        # GitHub personal access token
+    r"gh[os]r?_[A-Za-z0-9]{20,}",                   # GitHub OAuth/server/refresh
+    r"xox[bp]-[A-Za-z0-9-]{10,}",                   # Slack bot/user token
+    r"AKIA[0-9A-Z]{16}",                            # AWS access key id
+    r"AIza[0-9A-Za-z_\-]{20,}",                     # Google API key
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----",          # PEM private key
+]
 
 
 def validate_files(files: dict[str, str], max_bytes: int, max_files: int = 500) -> None:
