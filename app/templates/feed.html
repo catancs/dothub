@@ -9,8 +9,9 @@
 
   <div class="toolbar">
     <div class="pills">
-      <a href="/?tab=discover&window={{ window }}" class="{{ 'on' if tab != 'following' else '' }}">Discover</a>
+      <a href="/?tab=discover&window={{ window }}" class="{{ 'on' if tab == 'discover' else '' }}">Discover</a>
       <a href="/?tab=following" class="{{ 'on' if tab == 'following' else '' }}">Following</a>
+      <a href="/?tab=no-code&window={{ window }}" class="{{ 'on' if tab == 'no-code' else '' }}">No-code</a>
     </div>
     {% if tab != 'following' %}
     <div class="win">
@@ -20,10 +21,10 @@
     </div>
     {% endif %}
   </div>
-  <label class="search" style="margin-bottom:22px">
+  <form class="search" method="get" action="/" style="margin-bottom:22px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input placeholder="Search setups, people, skills">
-  </label>
+    <input name="q" placeholder="Search setups by title" value="{{ q }}">
+  </form>
 
   <div class="grid">
     {% for item in items %}
@@ -42,10 +43,15 @@
         {% else %}
         <span class="metric">{{ item.recent_pulls }} pulls / {{ window }}</span>
         {% endif %}
-        {% if item.runs_code %}
-        <span class="chip code" style="margin-left:auto"><span class="pip"></span>runs code</span>
+        {% if item.primary_tag %}
+        <span class="tag" style="margin-left:auto">{{ item.primary_tag }}</span>
         {% else %}
-        <span class="chip safe" style="margin-left:auto"><span class="pip"></span>no code</span>
+        <span style="margin-left:auto"></span>
+        {% endif %}
+        {% if item.runs_code %}
+        <span class="chip code"><span class="pip"></span>runs code</span>
+        {% else %}
+        <span class="chip safe"><span class="pip"></span>no code</span>
         {% endif %}
       </div>
     </a>
