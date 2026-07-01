@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/")
 def feed(request: Request, tab: str = "discover", window: str = "7d",
-         q: str | None = None,
+         q: str | None = None, tag: str | None = None,
          db: Session = Depends(get_session), user=Depends(optional_user)):
     if tab == "following":
         if user is None:
@@ -20,7 +20,7 @@ def feed(request: Request, tab: str = "discover", window: str = "7d",
     elif tab == "no-code":
         items = setups.list_setups(db, window=window, runs_code=False)
     else:
-        items = setups.list_setups(db, query=q, window=window)
+        items = setups.list_setups(db, query=q, window=window, tag=tag)
     for it in items:
         it["primary_tag"] = bundle.primary_tag({"runs_code": it["runs_code"], "tags": it.get("tags", [])})
     return render(request, "feed.html",

@@ -72,3 +72,22 @@ def test_feed_no_code_tab(client, s3):
     assert r.status_code == 200
     assert "pure" in r.text
     assert "hooked" not in r.text
+
+
+def test_feed_tag_filter(client, s3):
+    from app.db import SessionLocal, Base, engine
+    Base.metadata.create_all(engine)
+    from app.models import User
+    from app import setups, security
+    db = SessionLocal()
+    u = User(username="auth", email="a@x.com", password_hash=security.hash_password("pw"))
+    db.add(u); db.flush()
+    setups.publish(db, u, "Pure", "d", {"skills/a/SKILL.md": "# a"}, slug="pure")
+    setups.publish(db, u, "Hooked", "d",
+                   {"hooks/hooks.json": '{"hooks":{"PreToolUse":[{"command":"echo"}]}}'}, slug="hooked")
+    db.commit(); db.close()
+
+    r = client.get("/?tag=hooks")
+    assert r.status_code == 200
+    assert "hooked" in r.text
+    assert "pure" not in r.text
