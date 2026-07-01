@@ -171,6 +171,7 @@ resource "aws_db_instance" "main" {
   instance_class         = var.db_instance_class
   allocated_storage      = 20
   storage_type           = "gp3"
+  storage_encrypted      = true
   db_name                = "dothub"
   username               = "dothub"
   password               = random_password.db.result

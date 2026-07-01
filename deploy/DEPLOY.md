@@ -16,8 +16,9 @@ IP is attached so the address is stable across reboots.
 
 Rough cost: near zero for the first year on a new AWS account (t3.micro EC2,
 db.t4g.micro RDS, and 20 GB storage are within the free tier). After the free
-tier it is roughly USD 23 per month, dominated by the always-on EC2 and RDS
-instances. `terraform destroy` stops all of it.
+tier it is roughly USD 27 per month: the always-on EC2 and RDS instances plus
+about USD 3.60 for the public IPv4 address, which AWS bills even while the
+elastic IP is attached. `terraform destroy` stops all of it.
 
 ## 2. Prerequisites
 
