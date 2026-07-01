@@ -52,10 +52,14 @@ def detail(slug: str, request: Request,
         by_cat.setdefault(_cat(path), []).append((path, p["file_contents"][path]))
     groups = [(cat, by_cat[cat]) for cat in _CAT_ORDER if cat in by_cat]
 
+    readme = p["file_contents"].get("README.md")
+    tags = p["effects"].get("tags", [])
     return render(request, "detail.html", {
         "p": p,
         "versions": versions,
         "is_owner": is_owner,
         "current": s.latest_version,
         "groups": groups,
+        "readme": readme,
+        "tags": tags,
     }, user=user)
