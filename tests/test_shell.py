@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 def test_static_css_served(client):
     r = client.get("/static/app.css")
     assert r.status_code == 200
-    assert "--blue:#4f7cf0" in r.text
+    assert "--blue:#2536c9" in r.text
 
 def test_app_boots_with_web_router(client):
     # health still works and an unknown page is a clean 404, not a 500
