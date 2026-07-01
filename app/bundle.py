@@ -169,6 +169,28 @@ def effects_manifest(files: dict[str, str]) -> dict:
     }
 
 
+def primary_tag(manifest: dict) -> str | None:
+    """Pick the single most descriptive tag for a feed card.
+
+    Precedence: skills-only (safest signal) when no code runs, then hooks,
+    then the first mcp:* server, then plugins, then commands, then agents.
+    Returns None when no tag applies.
+    """
+    tags = manifest.get("tags", [])
+    if not manifest.get("runs_code", False) and "skills-only" in tags:
+        return "skills-only"
+    for t in ("hooks",):
+        if t in tags:
+            return t
+    for t in tags:
+        if t.startswith("mcp:"):
+            return t
+    for t in ("plugins", "commands", "agents"):
+        if t in tags:
+            return t
+    return None
+
+
 def slugify(text: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return s or "setup"
