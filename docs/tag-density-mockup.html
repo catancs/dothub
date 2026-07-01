@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dothub · tag density on feed cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Familjen+Grotesk:wght@400;500;600;700&family=Sometype+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#181510; --ink-2:#413b30; --ink-3:#6a6456;
+  --paper:#f3efe4; --surface:#fbf8f0; --surface-2:#efe7d7; --raise:#fdfbf4;
+  --line:#ddd4c1; --line-2:#e7dfcd;
+  --blue:#2536c9; --blue-700:#1a279e; --blue-tint:#e2e5f8;
+  --amber:#ff5230; --amber-tint:#ffe1d9;
+  --radius:16px; --radius-sm:10px;
+  --shadow:6px 6px 0 var(--amber);
+  --shadow-sm:3px 3px 0 rgba(37,54,201,.10);
+  --mono:"Sometype Mono",ui-monospace,monospace;
+  --sans:"Familjen Grotesk",-apple-system,sans-serif;
+  --serif:"Bricolage Grotesque","Familjen Grotesk",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--sans); color:var(--ink); background:var(--paper);
+  background-image:radial-gradient(rgba(37,54,201,.13) 1px, transparent 1.4px);
+  background-size:9px 9px;
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+.mono{font-family:var(--mono)}
+
+main{max-width:1080px;margin:0 auto;padding:36px 24px 90px}
+.eyebrow{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+h1.big{font-family:var(--serif);font-weight:800;font-size:40px;line-height:.98;letter-spacing:-.03em;color:var(--blue)}
+.sub{color:var(--ink-2);font-size:15.5px;margin-top:12px;max-width:62ch;font-weight:500}
+
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:34px}
+@media(max-width:880px){.compare{grid-template-columns:1fr}}
+.col-h{font-family:var(--serif);font-weight:800;font-size:20px;color:var(--blue);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.col-h .tag-rec{font-family:var(--mono);font-size:11px;font-weight:500;color:#fff;background:var(--amber);padding:3px 8px;border-radius:7px}
+.col-d{color:var(--ink-3);font-size:13.5px;margin-bottom:18px}
+
+/* grid of cards like the live feed */
+.grid{display:grid;grid-template-columns:1fr;gap:18px}
+.card{background:var(--surface);border:2px solid var(--blue);border-radius:var(--radius);padding:18px 20px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.card.flag{box-shadow:6px 6px 0 var(--blue)}
+.card-top h3{font-family:var(--serif);font-weight:800;font-size:19px;letter-spacing:-.02em;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+.card-top .rank{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink-3)}
+.slug{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin-top:3px}
+.slug b{color:var(--ink-2)}
+.desc{color:var(--ink-2);font-size:13.8px;font-weight:500;line-height:1.5}
+.card-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.who{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.mini{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:9px;color:#fff;background:var(--blue)}
+.metric{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;border:1.5px solid transparent}
+.chip .pip{width:6px;height:6px;border-radius:50%}
+.chip.code{color:var(--amber);background:var(--amber-tint);border-color:var(--amber)}
+.chip.code .pip{background:var(--amber)}
+.chip.safe{color:#1f7a4d;background:#dcefdf;border-color:#7fbf8f}
+.chip.safe .pip{background:#1f7a4d}
+
+/* the tags themselves, the thing we are comparing */
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--blue);background:var(--blue-tint);border:1.2px solid var(--blue);padding:2px 8px;border-radius:999px}
+.tag.primary{background:var(--blue);color:#fff}
+
+.footnote{margin-top:40px;padding:18px 20px;background:var(--surface);border:2px solid var(--line);border-radius:var(--radius-sm);color:var(--ink-2);font-size:13.5px;line-height:1.6}
+.footnote b{color:var(--blue)}
+.footnote code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Design comparison</div>
+  <h1 class="big">Tag density on the feed card</h1>
+  <p class="sub">Each setup auto-derives tags from its effects manifest: <span class="mono">hooks</span>, <span class="mono">mcp:linear</span>, <span class="mono">plugins</span>, <span class="mono">commands</span>, <span class="mono">skills-only</span>. The question is how many of those show on a feed card before it gets noisy. Full tag list always appears on the detail page either way.</p>
+
+  <div class="compare">
+    <div>
+      <div class="col-h">Option A <span class="tag-rec">recommended</span></div>
+      <div class="col-d">Primary tag only. One pill: the single most descriptive signal (<span class="mono">skills-only</span> for no-code setups, <span class="mono">hooks</span> for code-running ones). Clean, scannable.</div>
+      <div class="grid">
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">01</span>Fast Rails startup</h3><div class="slug"><b>catancs</b>/rails-fast-startup</div></div>
+          <p class="desc">Opinionated Rails scaffolding with a Postgres MCP and a code-review skill.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">CA</span>catancs</span>
+            <span class="metric">14 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag primary">hooks</span></span>
+            <span class="chip code"><span class="pip"></span>runs code</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">02</span>Writing craft skills</h3><div class="slug"><b>elio</b>/writing-craft</div></div>
+          <p class="desc">Pure skills for clearer prose. No hooks, no MCP, no plugins.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">EL</span>elio</span>
+            <span class="metric">9 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag primary">skills-only</span></span>
+            <span class="chip safe"><span class="pip"></span>no code</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">03</span>Linear workflow</h3><div class="slug"><b>maya</b>/linear-flow</div></div>
+          <p class="desc">Linear MCP plus issue-triage commands and a standby agent.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">MA</span>maya</span>
+            <span class="metric">6 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag primary">mcp:linear</span></span>
+            <span class="chip code"><span class="pip"></span>runs code</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="col-h">Option B</div>
+      <div class="col-d">All tags. Every derived tag shows as a pill. More information per card, but a setup with hooks + MCP + plugins + commands can show four or five pills alongside the runs-code chip.</div>
+      <div class="grid">
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">01</span>Fast Rails startup</h3><div class="slug"><b>catancs</b>/rails-fast-startup</div></div>
+          <p class="desc">Opinionated Rails scaffolding with a Postgres MCP and a code-review skill.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">CA</span>catancs</span>
+            <span class="metric">14 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag">hooks</span><span class="tag">mcp:postgres</span><span class="tag">commands</span><span class="tag">plugins</span></span>
+            <span class="chip code"><span class="pip"></span>runs code</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">02</span>Writing craft skills</h3><div class="slug"><b>elio</b>/writing-craft</div></div>
+          <p class="desc">Pure skills for clearer prose. No hooks, no MCP, no plugins.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">EL</span>elio</span>
+            <span class="metric">9 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag">skills-only</span></span>
+            <span class="chip safe"><span class="pip"></span>no code</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-top"><h3><span class="rank">03</span>Linear workflow</h3><div class="slug"><b>maya</b>/linear-flow</div></div>
+          <p class="desc">Linear MCP plus issue-triage commands and a standby agent.</p>
+          <div class="card-foot">
+            <span class="who"><span class="mini">MA</span>maya</span>
+            <span class="metric">6 pulls / 7d</span>
+            <span class="tags" style="margin-left:auto"><span class="tag">hooks</span><span class="tag">mcp:linear</span><span class="tag">commands</span><span class="tag">agents</span></span>
+            <span class="chip code"><span class="pip"></span>runs code</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>How the primary tag is chosen (Option A):</b> prefer <code>skills-only</code> when <code>runs_code</code> is false (it is the safest, most decision-relevant signal). Otherwise prefer <code>hooks</code> (code runs), then <code>mcp:&lt;name&gt;</code>, then <code>plugins</code>, then the first non-zero count tag. The full tag set still appears on the detail page header in both options, so no information is lost, only card noise is reduced.
+  </div>
+</main>
+</body>
+</html>

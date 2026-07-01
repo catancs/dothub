@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dothub · rate limiting approach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Familjen+Grotesk:wght@400;500;600;700&family=Sometype+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#181510; --ink-2:#413b30; --ink-3:#6a6456;
+  --paper:#f3efe4; --surface:#fbf8f0; --surface-2:#efe7d7; --raise:#fdfbf4;
+  --line:#ddd4c1; --line-2:#e7dfcd;
+  --blue:#2536c9; --blue-700:#1a279e; --blue-tint:#e2e5f8;
+  --amber:#ff5230; --amber-tint:#ffe1d9;
+  --green:#1f7a4d; --green-tint:#dcefdf;
+  --radius:16px; --radius-sm:10px;
+  --shadow:6px 6px 0 var(--amber);
+  --shadow-sm:3px 3px 0 rgba(37,54,201,.10);
+  --mono:"Sometype Mono",ui-monospace,monospace;
+  --sans:"Familjen Grotesk",-apple-system,sans-serif;
+  --serif:"Bricolage Grotesque","Familjen Grotesk",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--sans); color:var(--ink); background:var(--paper);
+  background-image:radial-gradient(rgba(37,54,201,.13) 1px, transparent 1.4px);
+  background-size:9px 9px;
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:var(--mono)}
+
+main{max-width:1080px;margin:0 auto;padding:36px 24px 90px}
+.eyebrow{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+h1.big{font-family:var(--serif);font-weight:800;font-size:40px;line-height:.98;letter-spacing:-.03em;color:var(--blue)}
+.sub{color:var(--ink-2);font-size:15.5px;margin-top:12px;max-width:64ch;font-weight:500}
+
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:34px}
+@media(max-width:880px){.compare{grid-template-columns:1fr}}
+.col{background:var(--surface);border:2px solid var(--blue);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+.col.rec{box-shadow:var(--shadow);border-color:var(--amber)}
+.col-h{font-family:var(--serif);font-weight:800;font-size:22px;color:var(--blue);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.col.rec .col-h{color:var(--amber)}
+.badge{font-family:var(--mono);font-size:11px;font-weight:500;color:#fff;background:var(--amber);padding:3px 8px;border-radius:7px}
+.col-d{color:var(--ink-3);font-size:13.5px;margin-bottom:18px}
+
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:13px 0;border-top:1.5px dashed var(--line)}
+.row:first-of-type{border-top:0}
+.row .k{font-size:13px;font-weight:700;color:var(--ink-2);flex-shrink:0;width:120px}
+.row .v{font-size:13.5px;color:var(--ink-2);text-align:right;line-height:1.5}
+.v .yes{color:var(--green);font-weight:700}
+.v .no{color:var(--amber);font-weight:700}
+.v .meh{color:#b8860b;font-weight:700}
+.v code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+
+.pro-con{margin-top:18px;padding-top:16px;border-top:2px solid var(--line)}
+.pro-con h4{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+.pc-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.pc-list li{font-size:13.3px;color:var(--ink-2);padding-left:20px;position:relative;line-height:1.5}
+.pc-list li::before{position:absolute;left:0;top:0;font-family:var(--mono);font-weight:700;font-size:13px}
+.pc-list.pro li::before{content:"+";color:var(--green)}
+.pc-list.con li::before{content:"-";color:var(--amber)}
+
+.codeblock{margin-top:18px;background:#1a1a14;border-radius:var(--radius-sm);padding:14px 16px;overflow-x:auto}
+.codeblock pre{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:#e7dfcd;white-space:pre}
+.codeblock .c{color:#6a6456}
+.codeblock .k{color:#ffb86c}
+.codeblock .s{color:#a3e4a3}
+
+.footnote{margin-top:36px;padding:18px 20px;background:var(--surface);border:2px solid var(--line);border-radius:var(--radius-sm);color:var(--ink-2);font-size:13.5px;line-height:1.6}
+.footnote b{color:var(--blue)}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Design comparison</div>
+  <h1 class="big">How to rate-limit auth</h1>
+  <p class="sub">Login, signup, and API-key minting are unbounded today. A bot on a t3.micro brute-forces the login page in minutes. Both options below stop that. The question is whether to add a dependency or hand-roll ~30 lines.</p>
+
+  <div class="compare">
+    <div class="col rec">
+      <div class="col-h">Option A <span class="badge">recommended</span></div>
+      <div class="col-d">slowapi, the standard FastAPI rate limiter. Decorator on each route.</div>
+
+      <div class="row"><span class="k">New dependency</span><span class="v"><span class="yes">yes</span>, <code>slowapi</code></span></div>
+      <div class="row"><span class="k">Lines I write</span><span class="v">~10 (decorators + setup)</span></div>
+      <div class="row"><span class="k">Edge cases</span><span class="v"><span class="yes">handled</span> (X-Forwarded-For, 429 responses, per-route limits)</span></div>
+      <div class="row"><span class="k">Maintenance</span><span class="v"><span class="yes">library</span> owns it</span></div>
+      <div class="row"><span class="k">In-memory only?</span><span class="v"><span class="meh">yes</span> (resets on restart, fine for single-instance)</span></div>
+      <div class="row"><span class="k">Cost</span><span class="v">one <code>pip install</code></span></div>
+
+      <div class="codeblock"><pre><span class="c"># main.py</span>
+<span class="k">from</span> slowapi <span class="k">import</span> Limiter
+limiter = Limiter(key_func=<span class="k">lambda</span> r: r.client.host)
+app.state.limiter = limiter
+
+<span class="c"># auth.py</span>
+<span class="k">@router</span>.post(<span class="s">"/login"</span>)
+<span class="k">@limiter</span>.limit(<span class="s">"10/minute"</span>)
+<span class="k">def</span> login_submit(request, identifier=Form(...), ...):</pre></div>
+
+      <div class="pro-con">
+        <h4>Trade-offs</h4>
+        <ul class="pc-list pro">
+          <li>Battle-tested, handles forwarded IPs behind nginx</li>
+          <li>Per-route limits via a readable decorator</li>
+          <li>Returns proper 429 with Retry-After</li>
+        </ul>
+        <ul class="pc-list con" style="margin-top:10px">
+          <li>One new dependency to pin and update</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-h">Option B</div>
+      <div class="col-d">Hand-rolled in-memory limiter. A dict of IP to recent timestamps, pruned each request.</div>
+
+      <div class="row"><span class="k">New dependency</span><span class="v"><span class="no">none</span>, zero-dep</span></div>
+      <div class="row"><span class="k">Lines I write</span><span class="v">~30 (the limiter + wiring)</span></div>
+      <div class="row"><span class="k">Edge cases</span><span class="v"><span class="meh">I handle</span> X-Forwarded-For, 429, pruning myself</span></div>
+      <div class="row"><span class="k">Maintenance</span><span class="v"><span class="no">I own</span> it forever</span></div>
+      <div class="row"><span class="k">In-memory only?</span><span class="v"><span class="meh">yes</span> (same caveat, single-instance)</span></div>
+      <div class="row"><span class="k">Cost</span><span class="v">my time + future bug surface</span></div>
+
+      <div class="codeblock"><pre><span class="c"># app/ratelimit.py</span>
+_hits: dict[str, list[float]] = {}
+<span class="k">def</span> check(ip: str, limit: int, window: float):
+    now = monotonic()
+    hits = [t <span class="k">for</span> t <span class="k">in</span> _hits.get(ip, [])
+            <span class="k">if</span> t > now - window]
+    <span class="k">if</span> len(hits) >= limit:
+        <span class="k">raise</span> HTTPException(429)
+    hits.append(now); _hits[ip] = hits
+
+<span class="c"># then call check() at the top of each route,</span>
+<span class="c"># reading X-Forwarded-For behind nginx yourself</span></pre></div>
+
+      <div class="pro-con">
+        <h4>Trade-offs</h4>
+        <ul class="pc-list pro">
+          <li>No new dependency, nothing to pin or update</li>
+          <li>Full control over the logic</li>
+        </ul>
+        <ul class="pc-list con" style="margin-top:10px">
+          <li>I reimplement what slowapi already does correctly</li>
+          <li>X-Forwarded-For parsing behind nginx is easy to get wrong</li>
+          <li>Future me maintains a bespoke limiter</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>Both are in-memory</b>, which means the counter resets if the EC2 restarts. That is fine for dothub's single-instance deploy: a restart is rare and a brief window of unlimited attempts is not a real exposure. If this ever scales to multiple instances, the limiter would move to Redis, but that is out of scope for a learning-project launch. The real difference is whether I spend one dependency or thirty lines of code I then own.
+  </div>
+</main>
+</body>
+</html>
