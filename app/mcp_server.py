@@ -106,12 +106,44 @@ def list_setups(query: str | None = None) -> list[dict]:
         db.close()
 
 
+def prepare_setup(files: dict[str, str]) -> dict:
+    """Preview a setup's effects BEFORE publishing. Read-only, no auth needed.
+
+    Call this first with the files you gathered (relative path to text content),
+    surface the returned `effects` and any `secret_flags` to the user, and only
+    then call `publish_setup` once the user approves.
+
+    Gather convention (advisory, server accepts any safe paths):
+    include skills/**/SKILL.md (+ siblings), commands/**/*.md, agents/**/*.md,
+    hooks/hooks.json, .mcp.json, plugins.json, CLAUDE.md, .claude/rules/**.
+    Exclude node_modules/, .git/, *.db, dev-bundles/, and any file over the
+    per-file size cap. The server enforces path safety and size, not convention.
+    """
+    from . import bundle as _bundle
+    from .config import settings
+    try:
+        _bundle.validate_files(files, settings.max_bundle_bytes)
+    except _bundle.BundleError as e:
+        return {"valid": False, "error": str(e), "effects": None,
+                "gathered_count": len(files), "total_bytes": 0, "warnings": []}
+    effects = _bundle.effects_manifest(files)
+    total = sum(len(c.encode("utf-8")) for c in files.values())
+    warnings: list[str] = []
+    if not any(p.startswith("skills/") for p in files):
+        warnings.append("no skills/ files found")
+    if "hooks/hooks.json" in files and not effects["hooks"]:
+        warnings.append("hooks.json present but no hook commands parsed")
+    return {"valid": True, "error": None, "effects": effects,
+            "gathered_count": len(files), "total_bytes": total, "warnings": warnings}
+
+
 # Register the plain functions as MCP tools without rebinding their names, so
 # they remain directly importable + callable for unit tests.
 mcp.tool(publish_setup)
 mcp.tool(preview_setup)
 mcp.tool(install_setup)
 mcp.tool(list_setups)
+mcp.tool(prepare_setup)
 
 
 def get_mcp_app():
