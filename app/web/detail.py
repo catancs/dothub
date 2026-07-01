@@ -33,7 +33,7 @@ def detail(slug: str, request: Request,
            user: User | None = Depends(optional_user),
            db: Session = Depends(get_session)):
     try:
-        p = setups.preview(db, slug, include_files=True)
+        p = setups.preview(db, slug, include_files=True, viewer=user)
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
 

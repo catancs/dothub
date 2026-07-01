@@ -55,8 +55,10 @@ def publish(db, owner: User, title: str, description: str, files: dict, slug: st
     db.commit()
     return {"slug": slug, "version": version, "url": f"{settings.base_url}/s/{slug}"}
 
-def preview(db, slug: str, include_files: bool = False) -> dict:
+def preview(db, slug: str, include_files: bool = False, viewer: User | None = None) -> dict:
     s, v = _load_latest(db, slug)
+    if not s.is_public and (viewer is None or viewer.id != s.owner_id):
+        raise NotFound(slug)
     author = db.scalar(select(User.username).where(User.id == s.owner_id))
     files = bundle.unpack(storage.get_archive(v.archive_key))
     out = {
