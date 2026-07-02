@@ -9,6 +9,7 @@ bcrypt==4.2.*
 boto3==1.35.*
 fastmcp==2.14.7
 itsdangerous==2.2.*
+slowapi==0.1.9
 pytest==8.*
 httpx==0.28.*
 moto[s3]==5.*

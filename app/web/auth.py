@@ -9,6 +9,7 @@ from app import security
 from app.web._render import render
 from app.api import optional_user
 from app.validation import validate_signup
+from app.ratelimit import limiter
 
 router = APIRouter()
 
@@ -19,6 +20,7 @@ def login_page(request: Request, user: User | None = Depends(optional_user)):
 
 
 @router.post("/login")
+@limiter.limit("10/minute")
 def login_submit(
     request: Request,
     identifier: str = Form(...),
@@ -47,6 +49,7 @@ def signup_page(request: Request, user: User | None = Depends(optional_user)):
 
 
 @router.post("/signup")
+@limiter.limit("5/minute")
 def signup_submit(
     request: Request,
     username: str = Form(...),

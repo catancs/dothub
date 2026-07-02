@@ -6,6 +6,7 @@ from .db import get_session
 from .models import User, ApiKey, Follow
 from . import bundle, security, setups
 from .validation import validate_signup
+from .ratelimit import limiter
 
 router = APIRouter()
 
@@ -51,6 +52,7 @@ def optional_user(request: Request, db: Session = Depends(get_session)) -> User 
     return _resolve_user(request, db)
 
 @router.post("/api/signup")
+@limiter.limit("5/minute")
 def signup(body: SignupIn, request: Request, db: Session = Depends(get_session)):
     try:
         validate_signup(body.username, body.email, body.password)
@@ -66,6 +68,7 @@ def signup(body: SignupIn, request: Request, db: Session = Depends(get_session))
     return {"id": u.id, "username": u.username}
 
 @router.post("/api/login")
+@limiter.limit("10/minute")
 def login(body: LoginIn, request: Request, db: Session = Depends(get_session)):
     u = db.scalar(select(User).where(User.email == body.email))
     if not u or not security.verify_password(body.password, u.password_hash):
@@ -74,7 +77,8 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_session)):
     return {"id": u.id, "username": u.username}
 
 @router.post("/api/keys")
-def mint_key(body: KeyIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
+@limiter.limit("5/minute")
+def mint_key(body: KeyIn, request: Request, user: User = Depends(current_user), db: Session = Depends(get_session)):
     plain, key_hash = security.generate_api_key()
     db.add(ApiKey(user_id=user.id, key_hash=key_hash, label=body.label)); db.commit()
     return {"api_key": plain}  # shown once

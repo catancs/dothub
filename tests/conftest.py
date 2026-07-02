@@ -8,6 +8,19 @@ os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
 import pytest
 from fastapi.testclient import TestClient
 
+
+@pytest.fixture(autouse=True)
+def _reset_limiter():
+    # The rate limiter is a module-level singleton with in-memory state that
+    # persists across tests in the same process. Without a reset, signups and
+    # logins (all from 127.0.0.1 in the test client) would accumulate against a
+    # shared 5/10-per-minute budget and trip 429s in unrelated tests.
+    from app.ratelimit import limiter
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
 @pytest.fixture
 def db():
     from app.db import Base, engine, SessionLocal

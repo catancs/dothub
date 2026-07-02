@@ -23,6 +23,11 @@ def create_app() -> FastAPI:
             yield
 
     app = FastAPI(title="dothub", lifespan=lifespan)
+    from slowapi import _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from .ratelimit import limiter
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
     @app.get("/healthz")
