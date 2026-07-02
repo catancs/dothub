@@ -16,6 +16,7 @@
     <a class="brand" href="/"><span class="dot"></span>dothub</a>
     <nav class="nav-links">
       <a href="/" class="{% if request.url.path == '/' %}on{% endif %}">Discover</a>
+      <a href="/publish" class="{% if request.url.path == '/publish' %}on{% endif %}">Publish</a>
       {% if user %}
       <a href="/?tab=following">Following</a>
       <a href="/history" class="{% if request.url.path == '/history' %}on{% endif %}">History</a>

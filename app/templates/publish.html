@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Publish a setup - dothub{% endblock %}
+{% block body %}
+<section class="screen active">
+  <div class="phead">
+    <div class="eyebrow">Share your setup</div>
+    <h1 class="big">Publish from your<br>agent <em>CLI</em>.</h1>
+    <p class="sub">dothub publishing is agent-native. Your Claude Code agent gathers your setup and publishes it via the dothub MCP server. No upload form, no script.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h4>1. Add the dothub MCP server</h4></div>
+    <div class="panel-b">
+      <p class="sub" style="margin-top:0;font-size:14px">Mint an API key on your Account page, then add dothub to Claude Code.</p>
+      <div class="hook"><div class="ev">Run in a terminal</div>
+        <pre class="cmd">claude mcp add --transport http dothub {{ request.base_url }}mcp/ --header "Authorization: Bearer dh_your_key"</pre></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h4>2. Ask your agent to publish</h4></div>
+    <div class="panel-b">
+      <p class="sub" style="margin-top:0;font-size:14px">In a Claude Code session, ask it to publish your setup. It will gather your skills, commands, agents, hooks, MCP config, and plugins, preview the effects with you, then publish.</p>
+      <div class="hook"><div class="ev">The agent calls these tools in order</div>
+        <pre class="cmd">prepare_setup(files)   # preview effects + secret flags, no publish
+publish_setup(title, description, files)   # writes to dothub after you approve</pre></div>
+      <p class="sub" style="font-size:14px">The agent is the export step. It reads your files with its own tools and sends them as a path-to-content map. dothub validates paths and size, computes the effects manifest, and shows it for review.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h4>3. Share the result</h4></div>
+    <div class="panel-b">
+      <p class="sub" style="margin-top:0;font-size:14px">Your setup gets a public page at <span class="mono">/s/&lt;slug&gt;</span> with its full effects manifest. Share that link.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
