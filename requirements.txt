@@ -13,3 +13,4 @@ slowapi==0.1.9
 pytest==8.*
 httpx==0.28.*
 moto[s3]==5.*
+alembic==1.13.*

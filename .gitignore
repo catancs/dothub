@@ -21,6 +21,9 @@ venv/
 *.db
 dev-bundles/
 
+# Alembic scratch DB (stamp verification only)
+baseline.db
+
 # OS
 .DS_Store
 
