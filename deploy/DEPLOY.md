@@ -119,5 +119,4 @@ This removes every resource above and stops billing.
   deletes the database and its data permanently with no final backup. This is
   intentional for a learning project that should tear down cleanly. Change it
   before storing anything you care about.
-- The session cookie is not yet marked `https_only`. A future hardening pass
-  should set that once the app always runs behind TLS.
+- **CSRF (partial).** Session cookies use `SameSite=Lax`, which mitigates form-post CSRF. The JSON `/api/*` mutation routes (follow, revert, key mint, account) are a residual surface without full CSRF tokens. No mutation currently moves money or deletes data. Full CSRF token protection is a planned fast-follow.
