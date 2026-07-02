@@ -23,11 +23,10 @@ def create_app() -> FastAPI:
             yield
 
     app = FastAPI(title="dothub", lifespan=lifespan)
-    from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
-    from .ratelimit import limiter
+    from .ratelimit import limiter, rate_limit_handler
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
     # Secure cookie in production (BASE_URL is https); relaxed over plain http
     # for local dev and the test client, which cannot send a Secure cookie back.
     session_https_only = settings.base_url.startswith("https")
