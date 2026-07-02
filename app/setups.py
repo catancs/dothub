@@ -93,6 +93,8 @@ def revert(db, user: User, slug: str, target_version: int) -> dict:
 
 def install(db, slug: str, user: User | None = None) -> dict:
     s, v = _load_latest(db, slug)
+    if not s.is_public and (user is None or user.id != s.owner_id):
+        raise NotFound(slug)
     files = bundle.unpack(storage.get_archive(v.archive_key))
     s.downloads += 1
     if user is not None:

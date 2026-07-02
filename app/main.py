@@ -5,13 +5,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from .db import init_db
-from .config import settings
+from .config import settings, assert_prod_secret
 from .api import router as api_router
 from .web import router as web_router
 from .mcp_server import get_mcp_app
 
 
 def create_app() -> FastAPI:
+    assert_prod_secret()
     mcp_app = get_mcp_app()
 
     @asynccontextmanager

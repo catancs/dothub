@@ -19,7 +19,7 @@ else:
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 def init_db():
-    from . import models  # noqa: F401 — ensure models are registered
+    from . import models  # noqa: F401  ensure models are registered
     Base.metadata.create_all(engine)
 
 def get_session():

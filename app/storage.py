@@ -31,7 +31,7 @@ def get_archive(key: str) -> bytes:
 
 def presign_get(key: str, expires: int = 3600) -> str:
     if settings.storage_dir:
-        # ponytail: no presigning for local files — return a file:// URL the
+        # ponytail: no presigning for local files, return a file:// URL the
         # operator can open directly. Prod uses real presigned S3 URLs.
         return _local_path(key).resolve().as_uri()
     return _client().generate_presigned_url(
