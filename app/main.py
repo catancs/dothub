@@ -28,7 +28,11 @@ def create_app() -> FastAPI:
     from .ratelimit import limiter
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+    # Secure cookie in production (BASE_URL is https); relaxed over plain http
+    # for local dev and the test client, which cannot send a Secure cookie back.
+    session_https_only = settings.base_url.startswith("https")
+    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret,
+                       https_only=session_https_only, same_site="lax")
 
     @app.get("/healthz")
     def healthz():
