@@ -17,8 +17,10 @@ DATABASE_URL='sqlite+pysqlite:///./dothub.db' STORAGE_DIR='./dev-bundles' \
 - MCP:  http://localhost:8000/mcp/
 - Health: http://localhost:8000/healthz
 
-For production, leave `STORAGE_DIR` unset and set the real S3/RDS values from
-`.env.example` (the app then uses S3 + Postgres). See `deploy/DEPLOY.md`.
+For production, the default deploy runs this same SQLite + local-disk config on
+a single AWS box with automatic HTTPS — see `deploy/DEPLOY.md`. S3 + Postgres
+remain supported (set the values from `.env.example`) if you ever outgrow one
+box.
 
 ## Test
 ```bash

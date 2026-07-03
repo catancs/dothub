@@ -1,122 +1,164 @@
-# dothub deployment runbook
+# dothub deployment runbook (lean single-box)
 
-This deploys dothub (the v2 app: server-rendered web pages plus a remote MCP
-server) to AWS with one command using the Terraform module in `infra/`, and
-tears it down with one command.
+This deploys dothub to **one** AWS EC2 instance: the app runs directly under
+systemd, SQLite and bundle archives live on the instance disk, and Caddy
+provides the reverse proxy with automatic HTTPS. No RDS, no S3, no custom VPC,
+no nginx/certbot. Design rationale: `docs/superpowers/specs/2026-07-03-deploy-lean-aws-design.md`.
 
 ## 1. What gets created
 
-`terraform apply` stands up a self-contained stack: a VPC with two public
-subnets and an internet gateway (no NAT gateway), a single EC2 instance
-(Ubuntu 24.04) that runs gunicorn behind nginx, an RDS Postgres 16 database
-that is not publicly accessible and only reachable from the app security group,
-an S3 bucket (all public access blocked) for setup bundles, and an IAM instance
-role scoped to `s3:GetObject` and `s3:PutObject` on that bucket only. An elastic
-IP is attached so the address is stable across reboots.
+- One EC2 instance (Ubuntu 24.04, ARM `t4g.small`) in your account's **default
+  VPC**.
+- One security group: SSH (22) from your IP only; HTTP (80) and HTTPS (443)
+  from anywhere.
+- One Elastic IP for a stable address.
 
-Rough cost: near zero for the first year on a new AWS account (t3.micro EC2,
-db.t4g.micro RDS, and 20 GB storage are within the free tier). After the free
-tier it is roughly USD 27 per month: the always-on EC2 and RDS instances plus
-about USD 3.60 for the public IPv4 address, which AWS bills even while the
-elastic IP is attached. `terraform destroy` stops all of it.
+Cost on the credit-based Free Plan: `t4g.small` ≈ $12/mo (`t4g.micro` ≈ $6/mo);
+EBS, snapshots, and the attached EIP are cents. ~$100 credits last roughly
+8–16 months, longer if you tear down between sessions.
 
 ## 2. Prerequisites
 
-- An AWS account with credentials configured locally. Run `aws configure` (from
-  the AWS CLI) or export `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. Install
-  the CLI with `brew install awscli` on macOS or follow the AWS docs.
-- Terraform >= 1.6.
-- A domain you control (you will point an A record at the instance).
-- Your public IP, used to lock down SSH. Find it with
-  `curl -s https://checkip.amazonaws.com`.
-- An SSH public key, for example `~/.ssh/id_ed25519.pub`. If you do not have one,
-  create it with `ssh-keygen -t ed25519`.
+- **AWS credentials** configured locally (`aws configure`) for an **IAM user**
+  with an access key — not the root account. Verify with
+  `aws sts get-caller-identity`.
+- **AWS CLI** and an **SSH key** (`~/.ssh/dothub_ed25519` / `.pub`).
+- A **domain** you control (`dothub.nl`); you will add one A record.
 
-## 3. Deploy
+## 3. Launch the instance
 
-```bash
-cd infra
-terraform init
-cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars: set domain, admin_cidr (your IP as /32), and
-# ssh_public_key (the contents of your .pub file)
-terraform apply
-```
-
-Apply takes roughly 10 minutes; RDS is the slow part. When it finishes,
-Terraform prints the outputs, including `site_ip` and `next_steps`.
-
-## 4. Point DNS
-
-Create an A record for your domain pointing at the `site_ip` output value. Wait
-for it to resolve (`dig +short <your-domain>` should return that IP) before the
-next step, since certbot validates over the domain.
-
-## 5. TLS
+All from your laptop. The AMI is resolved via Canonical's SSM alias, so it is
+never a stale hardcoded ID.
 
 ```bash
-ssh ubuntu@<site_ip>
-sudo certbot --nginx -d <your-domain>
+REGION=eu-north-1
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+
+# SSH public key → EC2
+aws ec2 import-key-pair --region $REGION --key-name dothub \
+  --public-key-material fileb://~/.ssh/dothub_ed25519.pub
+
+# security group in the default VPC
+SG_ID=$(aws ec2 create-security-group --region $REGION \
+  --group-name dothub --description "dothub web" --query GroupId --output text)
+aws ec2 authorize-security-group-ingress --region $REGION --group-id "$SG_ID" \
+  --ip-permissions \
+    IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges="[{CidrIp=$MY_IP/32}]" \
+    IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges="[{CidrIp=0.0.0.0/0}]" \
+    IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges="[{CidrIp=0.0.0.0/0}]"
+
+# launch t4g.small on Ubuntu 24.04 arm64
+AMI="resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id"
+IID=$(aws ec2 run-instances --region $REGION \
+  --image-id "$AMI" --instance-type t4g.small \
+  --key-name dothub --security-group-ids "$SG_ID" \
+  --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=20,VolumeType=gp3}' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=dothub}]' \
+  --query 'Instances[0].InstanceId' --output text)
+
+# Elastic IP
+ALLOC=$(aws ec2 allocate-address --region $REGION --query AllocationId --output text)
+aws ec2 wait instance-running --region $REGION --instance-ids "$IID"
+aws ec2 associate-address --region $REGION --instance-id "$IID" --allocation-id "$ALLOC"
+EIP=$(aws ec2 describe-addresses --region $REGION --allocation-ids "$ALLOC" \
+  --query 'Addresses[0].PublicIp' --output text)
+echo "Instance $IID at $EIP"
 ```
 
-certbot edits the nginx site to serve HTTPS and sets up automatic renewal. It is
-run here, after DNS is pointed, rather than during provisioning.
+## 4. Provision the box
 
-## 6. Smoke test (v2)
+SSH in and run `setup.sh`. It installs Python + Caddy, clones the repo to
+`/opt/dothub`, creates the venv, writes `/etc/dothub.env` (generating a strong
+`SESSION_SECRET`), initializes the SQLite schema, stamps the Alembic baseline,
+and starts the `dothub` and `caddy` services. It is idempotent.
 
-1. Open `https://<your-domain>/`. The Discover feed page renders.
-2. Sign up at `https://<your-domain>/signup`.
-3. Mint an API key on `https://<your-domain>/account` (the key is shown once and
-   starts with `dh_`).
-4. Publish a setup through the API with your Bearer key:
+```bash
+ssh -i ~/.ssh/dothub_ed25519 ubuntu@$EIP
 
+# on the box — fetch the bootstrap script; it clones the rest of the repo:
+curl -fsSL https://raw.githubusercontent.com/catancs/dothub/main/deploy/setup.sh -o setup.sh
+sudo DOMAIN=dothub.nl bash setup.sh
+```
+
+Private repo: create a read-only fine-grained GitHub token, pass it to both the
+`curl` (`-H "Authorization: token <tok>"`) and `setup.sh`
+(`sudo DOMAIN=dothub.nl GITHUB_TOKEN=<tok> bash setup.sh`). Or skip GitHub
+entirely and `rsync` your working tree to `/opt/dothub`, then run
+`sudo DOMAIN=dothub.nl bash /opt/dothub/deploy/setup.sh`.
+
+## 5. Point DNS
+
+Create an A record for `dothub.nl` → the Elastic IP. Caddy retries certificate
+issuance until DNS resolves, so there is no ordering requirement — but HTTPS
+goes live only once `dig +short dothub.nl` returns the EIP.
+
+## 6. Smoke test
+
+1. `https://dothub.nl/` renders the Discover feed.
+2. Sign up at `/signup`; mint an API key on `/account` (shown once, starts `dh_`).
+3. Publish via the API:
    ```bash
-   curl -s -X POST https://<your-domain>/api/setups \
-     -H "Authorization: Bearer dh_your_key_here" \
-     -H "content-type: application/json" \
+   curl -s -X POST https://dothub.nl/api/setups \
+     -H "Authorization: Bearer dh_your_key" -H "content-type: application/json" \
      -d '{"title":"Smoke test","description":"hello","files":{"CLAUDE.md":"# hi"}}'
    ```
-
    The response includes a `slug`.
-5. Confirm it appears on the feed (`https://<your-domain>/` or
-   `GET https://<your-domain>/api/setups`) and that `https://<your-domain>/s/<slug>`
-   renders, including the effects panel.
-6. Add the remote MCP server to Claude Code:
-
+4. The setup appears on the feed and `https://dothub.nl/s/<slug>` renders with
+   the effects panel.
+5. Add the remote MCP server and install:
    ```bash
-   claude mcp add --transport http dothub https://<your-domain>/mcp/ \
-     --header "Authorization: Bearer dh_your_key_here"
+   claude mcp add --transport http dothub https://dothub.nl/mcp/ \
+     --header "Authorization: Bearer dh_your_key"
    ```
+   `install_setup(<slug>)` returns `{files}`.
+6. `POST https://dothub.nl/api/setups/<slug>/download` returns the files inline
+   (regression check for the storage-agnostic download).
 
 ## 7. Operate
 
-- App logs: `journalctl -u dothub -f`.
-- Provisioning log (first boot): `/var/log/cloud-init-output.log`.
-- Redeploy the app after pushing to GitHub:
-
+- Logs: `journalctl -u dothub -f` (app), `journalctl -u caddy -f` (TLS/proxy).
+- Cloud-init (first boot): `/var/log/cloud-init-output.log`.
+- Redeploy after pushing to GitHub:
   ```bash
-  ssh ubuntu@<site_ip>
-  cd /opt/dothub
-  sudo -u dothub git pull
-  sudo systemctl restart dothub
+  ssh -i ~/.ssh/dothub_ed25519 ubuntu@$EIP
+  sudo bash /opt/dothub/deploy/redeploy.sh
   ```
 
-## 8. Teardown
+## 8. Backups
+
+Data lives in `/var/lib/dothub/` (SQLite `dothub.db` + `bundles/`).
+
+- **Nightly local backup** — add a root cron on the box (guards against
+  app-level corruption / accidental deletion):
+  ```cron
+  15 3 * * * sqlite3 /var/lib/dothub/dothub.db ".backup /var/lib/dothub/backups/dothub-$(date +\%F).db" && \
+             tar czf /var/lib/dothub/backups/bundles-$(date +\%F).tgz -C /var/lib/dothub bundles && \
+             find /var/lib/dothub/backups -mtime +7 -delete
+  ```
+- **Daily EBS snapshot** — create an AWS **Data Lifecycle Manager** policy
+  targeting the instance's volume (tag `Name=dothub`). DLM runs in AWS's control
+  plane, so **no AWS credentials live on the box**. This is the offsite guard
+  against instance/volume loss.
+
+## 9. Teardown
+
+Stops all billing; `setup.sh` rebuilds the box in minutes.
 
 ```bash
-cd infra
-terraform destroy
+aws ec2 terminate-instances --region $REGION --instance-ids "$IID"
+aws ec2 wait instance-terminated --region $REGION --instance-ids "$IID"
+aws ec2 release-address --region $REGION --allocation-id "$ALLOC"   # unattached EIPs bill
 ```
 
-This removes every resource above and stops billing.
+## 10. Caveats
 
-## 9. Caveats
-
-- `terraform.tfstate` and the EC2 user data both contain the generated database
-  password and session secret. Keep the state file local and never commit it.
-  The `.gitignore` in this repo already excludes `*.tfstate*` and `*.tfvars`.
-- RDS is created with `skip_final_snapshot = true`, so `terraform destroy`
-  deletes the database and its data permanently with no final backup. This is
-  intentional for a learning project that should tear down cleanly. Change it
-  before storing anything you care about.
-- **CSRF (partial).** Session cookies use `SameSite=Lax`, which mitigates form-post CSRF. The JSON `/api/*` mutation routes (follow, revert, key mint, account) are a residual surface without full CSRF tokens. No mutation currently moves money or deletes data. Full CSRF token protection is a planned fast-follow.
+- **Data is on one EBS volume.** The nightly backup + EBS snapshots are the only
+  copies. This is intentional for a low-traffic personal deploy; add real
+  offsite backups before storing anything you can't lose.
+- **SQLite single-box ceiling.** WAL + `busy_timeout` handle the app's low write
+  concurrency. If write load ever grows, flip `DATABASE_URL` to Postgres and
+  `STORAGE_DIR`→S3 (both still supported in code) — no app rewrite.
+- **CSRF (partial).** Session cookies use `SameSite=Lax`, which mitigates
+  form-post CSRF. The JSON `/api/*` mutation routes (follow, revert, key mint,
+  account) are a residual surface without full CSRF tokens. No mutation moves
+  money or deletes data. Full CSRF protection is a planned fast-follow.
