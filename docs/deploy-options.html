@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dothub · how to deploy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Familjen+Grotesk:wght@400;500;600;700&family=Sometype+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171c; --ink-2:#3d4250; --ink-3:#6b7280;
+  --paper:#f4f1ea; --surface:#fbf9f3; --surface-2:#efe9da; --raise:#fffdf6;
+  --line:#ddd5c2; --line-2:#e8e0cd;
+  --blue:#1f3a8a; --blue-700:#172e6e; --blue-tint:#dde3f5;
+  --orange:#d84315; --orange-tint:#fde0d6;
+  --green:#2e7d32; --green-tint:#dcecd9;
+  --amber:#b8860b; --amber-tint:#f4e9c8;
+  --mono:"Sometype Mono",ui-monospace,monospace;
+  --sans:"Familjen Grotesk",-apple-system,sans-serif;
+  --serif:"Bricolage Grotesque","Familjen Grotesk",sans-serif;
+  --shadow:5px 5px 0 var(--orange);
+  --shadow-sm:2px 2px 0 rgba(31,58,138,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);
+  background-image:radial-gradient(rgba(31,58,138,.07) 1px,transparent 1.4px);background-size:11px 11px;
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:48px 28px 100px}
+a{color:var(--blue);font-weight:600}
+
+header.hero{border-bottom:3px solid var(--blue);padding-bottom:28px;margin-bottom:40px}
+.eyebrow{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:12px}
+h1{font-family:var(--serif);font-weight:800;font-size:54px;line-height:.98;letter-spacing:-.03em;color:var(--blue);max-width:18ch}
+h1 em{font-style:normal;color:var(--orange)}
+.lead{font-size:17px;color:var(--ink-2);margin-top:16px;max-width:62ch;font-weight:500}
+.lead .mono{font-family:var(--mono);font-size:15px;color:var(--blue)}
+
+/* TL;DR band */
+.tldr{background:var(--blue);color:#f4f6fb;border:2px solid var(--blue-700);border-radius:16px;padding:24px 28px;margin:32px 0 48px;box-shadow:var(--shadow)}
+.tldr h3{font-family:var(--serif);font-weight:800;font-size:20px;color:#fff;margin-bottom:10px}
+.tldr p{font-size:15px;color:#d6def0}
+.tldr b{color:#ffb89e;font-weight:700}
+
+/* option cards */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.opt{background:var(--surface);border:2px solid var(--blue);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;transition:.16s}
+.opt:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--orange)}
+.opt.wide{grid-column:1 / -1}
+.opt-head{padding:20px 24px;border-bottom:2px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.opt-num{font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;background:var(--blue);padding:4px 10px;border-radius:8px;flex:none}
+.opt-num.b{background:var(--orange)}
+.opt-num.g{background:var(--green)}
+.opt-num.a{background:var(--ink-3)}
+.opt-title{font-family:var(--serif);font-weight:800;font-size:24px;color:var(--ink);line-height:1.1;letter-spacing:-.02em}
+.opt-sub{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.opt-body{padding:8px 24px 24px}
+
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:2px solid var(--line);border-radius:12px;margin:18px 0;overflow:hidden}
+.metric{background:var(--surface-2);padding:14px 12px;text-align:center}
+.metric .v{font-family:var(--serif);font-weight:800;font-size:22px;line-height:1;color:var(--blue)}
+.metric .v.g{color:var(--green)}.metric .v.o{color:var(--orange)}.metric .v.a{color:var(--amber)}
+.metric .l{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin-top:7px}
+
+.row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.row:last-child{border:0}
+.row .k{font-family:var(--mono);font-weight:700;font-size:12.5px;color:var(--blue);flex:none;width:130px}
+.row .v{font-size:14px;color:var(--ink-2)}
+.row .v b{color:var(--ink);font-weight:700}
+.row .v code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 6px;border-radius:4px;color:var(--blue-700)}
+
+.pros,.cons{margin-top:16px}
+.pc-h{font-family:var(--sans);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.pros .pc-h{color:var(--green)}.cons .pc-h{color:var(--orange)}
+.pc-list{list-style:none}
+.pc-list li{font-size:14px;color:var(--ink-2);padding:5px 0 5px 22px;position:relative}
+.pc-list li::before{position:absolute;left:0;top:5px;font-family:var(--mono);font-weight:700;font-size:13px}
+.pros .pc-list li::before{content:"+";color:var(--green)}
+.cons .pc-list li::before{content:"-";color:var(--orange)}
+
+/* what you get table */
+.get{background:var(--surface);border:2px solid var(--blue);border-radius:16px;margin-top:48px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.get-h{padding:18px 24px;border-bottom:2px solid var(--line);font-family:var(--serif);font-weight:800;font-size:22px;color:var(--ink)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:13px 20px;border-bottom:1px solid var(--line-2);font-size:13.5px;vertical-align:top}
+th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);background:var(--surface-2)}
+td:first-child{font-weight:700;color:var(--ink);width:24%}
+td .y{color:var(--green);font-weight:700}.td .n{color:var(--orange);font-weight:700}
+.yes{color:var(--green);font-weight:700}.no{color:var(--orange);font-weight:700}.maybe{color:var(--amber);font-weight:700}
+.code{font-family:var(--mono);font-size:12px;background:var(--blue);color:#eef1fb;padding:10px 14px;border-radius:8px;overflow:auto;margin-top:12px}
+
+.foot{margin-top:48px;padding-top:28px;border-top:2px solid var(--line);font-size:13.5px;color:var(--ink-3)}
+.foot b{color:var(--ink-2)}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}h1{font-size:38px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">dothub / deploy decision</div>
+  <h1>Four ways to make dothub a <em>real</em> remote.</h1>
+  <p class="lead">dothub runs fully on <span class="mono">localhost</span> right now. To make it a public site a Claude Code session anywhere can hit, you need it on a server with a domain and TLS. Below: what each path costs, takes, and locks you into. Prices are <b>us-east-1, smallest viable config, July 2026</b>, for a low traffic side project (a few users, a few hundred setups).</p>
+</header>
+
+<div class="tldr">
+  <h3>The short version</h3>
+  <p>If you want the learning outcome with the least lock-in: pick <b>Terraform IaC</b>. You write the infra as code, run one command, and can tear the whole thing down for free in one command. If you just want it live fast and don't care about reproducibility, <b>Real AWS deploy</b> via console is fine. If you're not ready to spend, <b>Just update the runbook</b> costs nothing and leaves the door open.</p>
+</div>
+
+<div class="grid">
+
+  <!-- OPTION A -->
+  <article class="opt">
+    <div class="opt-head">
+      <div><div class="opt-title">Real AWS deploy</div><div class="opt-sub">console / cli, manual, click-through</div></div>
+      <div class="opt-num">A</div>
+    </div>
+    <div class="opt-body">
+      <div class="metrics">
+        <div class="metric"><div class="v a">$20-30</div><div class="l">per month</div></div>
+        <div class="metric"><div class="v">2-4h</div><div class="l">first deploy</div></div>
+        <div class="metric"><div class="v o">medium</div><div class="l">lock-in</div></div>
+      </div>
+      <div class="row"><div class="k">What it is</div><div class="v">Update <code>DEPLOY.md</code> for v2, then provision S3 + RDS + EC2 by hand (console or <code>aws</code> CLI), deploy, smoke test against your domain.</div></div>
+      <div class="row"><div class="k">You need</div><div class="v">An AWS account, a <b>domain you own</b> (or a free *.ddns for testing), ~30 min of focus.</div></div>
+      <div class="row"><div class="k">Reproducible</div><div class="v"><span class="no">No</span>. Settings live in the console. Rebuilding means remembering what you clicked.</div></div>
+      <div class="pros"><div class="pc-h">Pros</div><ul class="pc-list">
+        <li>Fastest path to a live URL</li>
+        <li>You learn the AWS console for real, by doing</li>
+        <li>No new tooling to learn</li>
+      </ul></div>
+      <div class="cons"><div class="pc-h">Cons</div><ul class="pc-list">
+        <li>Hard to tear down cleanly, resources linger and bill</li>
+        <li>Hard to reproduce or move regions</li>
+        <li>Easy to misconfigure a security group</li>
+      </ul></div>
+    </div>
+  </article>
+
+  <!-- OPTION B -->
+  <article class="opt">
+    <div class="opt-head">
+      <div><div class="opt-title">Terraform IaC</div><div class="opt-sub">infrastructure as code, reproducible</div></div>
+      <div class="opt-num b">B</div>
+    </div>
+    <div class="opt-body">
+      <div class="metrics">
+        <div class="metric"><div class="v a">$20-30</div><div class="l">per month</div></div>
+        <div class="metric"><div class="v">3-5h</div><div class="l">first deploy</div></div>
+        <div class="metric"><div class="v g">low</div><div class="l">lock-in</div></div>
+      </div>
+      <div class="row"><div class="k">What it is</div><div class="v">I write a Terraform module: VPC, EC2, RDS Postgres, S3 bucket, IAM instance role, security groups. Plus an updated runbook. You run <code>terraform apply</code>.</div></div>
+      <div class="row"><div class="k">You need</div><div class="v">AWS account, a domain, Terraform installed locally, AWS credentials configured.</div></div>
+      <div class="row"><div class="k">Reproducible</div><div class="v"><span class="yes">Yes</span>. <code>terraform destroy</code> removes everything, stops billing. Re-apply is one command.</div></div>
+      <div class="pros"><div class="pc-h">Pros</div><ul class="pc-list">
+        <li>One command up, one command down, zero lingering bills</li>
+        <li>The infra is versioned in git next to the app</li>
+        <li>Industry standard skill, directly transferable</li>
+        <li>I write it, you don't need deep AWS knowledge to run it</li>
+      </ul></div>
+      <div class="cons"><div class="pc-h">Cons</div><ul class="pc-list">
+        <li>Terraform has a learning curve to read and trust</li>
+        <li>Slightly more upfront time than clicking</li>
+        <li>State file needs safekeeping (local is fine for solo)</li>
+      </ul></div>
+    </div>
+  </article>
+
+  <!-- OPTION C -->
+  <article class="opt">
+    <div class="opt-head">
+      <div><div class="opt-title">Just update the runbook</div><div class="opt-sub">docs only, no infra, no spend</div></div>
+      <div class="opt-num g">C</div>
+    </div>
+    <div class="opt-body">
+      <div class="metrics">
+        <div class="metric"><div class="v g">$0</div><div class="l">per month</div></div>
+        <div class="metric"><div class="v">~1h</div><div class="l">my time</div></div>
+        <div class="metric"><div class="v g">none</div><div class="l">lock-in</div></div>
+      </div>
+      <div class="row"><div class="k">What it is</div><div class="v">I update <code>deploy/DEPLOY.md</code> for v2: the env var set, <code>STORAGE_DIR</code> unset for prod S3, the new schema, the real routes. Committed. You deploy yourself whenever.</div></div>
+      <div class="row"><div class="k">You need</div><div class="v">Nothing. Dothub stays local. The runbook is ready for whenever you are.</div></div>
+      <div class="row"><div class="k">Outcome</div><div class="v"><span class="maybe">Maybe later</span>. The door stays open, nothing runs, nothing bills.</div></div>
+      <div class="pros"><div class="pc-h">Pros</div><ul class="pc-list">
+        <li>Zero cost, zero risk, zero commitment</li>
+        <li>The doc is correct and ready for future-you</li>
+        <li>dothub already works locally, nothing is blocked</li>
+      </ul></div>
+      <div class="cons"><div class="pc-h">Cons</div><ul class="pc-list">
+        <li>dothub is never actually public</li>
+        <li>The "deploy something to AWS" learning goal is deferred</li>
+      </ul></div>
+    </div>
+  </article>
+
+  <!-- OPTION D -->
+  <article class="opt">
+    <div class="opt-head">
+      <div><div class="opt-title">Wrap the project</div><div class="opt-sub">done, ship it, move on</div></div>
+      <div class="opt-num a">D</div>
+    </div>
+    <div class="opt-body">
+      <div class="metrics">
+        <div class="metric"><div class="v g">$0</div><div class="l">per month</div></div>
+        <div class="metric"><div class="v">0h</div><div class="l">my time</div></div>
+        <div class="metric"><div class="v g">none</div><div class="l">lock-in</div></div>
+      </div>
+      <div class="row"><div class="k">What it is</div><div class="v">dothub is complete, redesigned, verified, and on GitHub. The deploy goal was the vehicle, not the destination. Call it done.</div></div>
+      <div class="row"><div class="k">You keep</div><div class="v">A working, distinctive app in your portfolio. A real remote MCP server pattern you can reuse. The local instance whenever you want to demo it.</div></div>
+      <div class="row"><div class="k">Lose</div><div class="v">The "live on AWS" badge. The public URL to share.</div></div>
+      <div class="pros"><div class="pc-h">Pros</div><ul class="pc-list">
+        <li>No more spend or ops burden</li>
+        <li>Everything is shipped and verified</li>
+        <li>Frees you for the next thing</li>
+      </ul></div>
+      <div class="cons"><div class="pc-h">Cons</div><ul class="pc-list">
+        <li>No public instance to show or use remotely</li>
+        <li>The original deploy-learning goal is only half met</li>
+      </ul></div>
+    </div>
+  </article>
+
+</div>
+
+<!-- WHAT YOU GET COMPARISON -->
+<div class="get">
+  <div class="get-h">What each actually delivers</div>
+  <table>
+    <thead><tr><th>Outcome</th><th>A. Real AWS</th><th>B. Terraform</th><th>C. Runbook only</th><th>D. Wrap</th></tr></thead>
+    <tbody>
+      <tr><td>Public URL with TLS</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>Real Postgres + S3 (not SQLite/disk)</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>Reproducible infra (git versioned)</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>One-command teardown (no surprise bills)</td><td class="no">No</td><td class="yes">Yes</td><td class="maybe">N/A</td><td class="maybe">N/A</td></tr>
+      <tr><td>Learns AWS console / CLI</td><td class="yes">Yes</td><td class="maybe">Some</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>Learns Terraform / IaC</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>Monthly cost</td><td class="maybe">$20-30</td><td class="maybe">$20-30</td><td class="yes">$0</td><td class="yes">$0</td></tr>
+      <tr><td>Time to first deploy</td><td class="maybe">2-4h</td><td class="maybe">3-5h</td><td class="yes">1h</td><td class="yes">0h</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- COST BREAKDOWN -->
+<div class="get" style="margin-top:24px">
+  <div class="get-h">Where the $20-30/month goes (options A and B)</div>
+  <table>
+    <thead><tr><th>Resource</th><th>Type</th><th>Why</th><th>Est. monthly</th></tr></thead>
+    <tbody>
+      <tr><td>EC2 instance</td><td>t3.micro (2 vCPU, 1 GB)</td><td>Runs gunicorn + nginx. Free tier eligible 12mo, then ~$8.5/mo</td><td>$8.50</td></tr>
+      <tr><td>RDS Postgres</td><td>db.t4g.micro, 20 GB</td><td>Metadata: users, setups, versions, follows, pulls. Free tier eligible, then ~$14/mo</td><td>$14.00</td></tr>
+      <tr><td>S3 bundles</td><td>Standard, a few hundred MB</td><td>The packed setup tarballs. Pennies at this scale</td><td>$0.50</td></tr>
+      <tr><td>Route 53 + TLS</td><td>Hosted zone + cert</td><td>Domain DNS. certbot TLS is free; Route 53 is ~$0.50/zone</td><td>$0.50</td></tr>
+      <tr><td>Data transfer</td><td>Outbound</td><td>Tiny at low traffic, first 100 GB free</td><td>~$0</td></tr>
+      <tr><td><b>Total, post free-tier</b></td><td></td><td></td><td><b>~$23/mo</b></td></tr>
+    </tbody>
+  </table>
+  <div style="padding:16px 24px 20px"><div class="code">Free tier note: a new AWS account gets 12 months of t3.micro EC2 + db.t4g.micro RDS free. So your first year could be near $0. After that, expect the ~$23/mo above. Options C and D are $0 regardless.</div></div>
+</div>
+
+<!-- IMPLICATIONS -->
+<div class="get" style="margin-top:24px">
+  <div class="get-h">The honest implications of each</div>
+  <table>
+    <thead><tr><th>If you pick</th><th>You are saying yes to</th><th>You are saying no to</th></tr></thead>
+    <tbody>
+      <tr><td>A. Real AWS</td><td>A live site fast, hands-on console learning</td><td>Reproducibility, clean teardown, IaC skills</td></tr>
+      <tr><td>B. Terraform</td><td>Reproducible infra, transferable IaC skill, safe teardown</td><td>Speed, console familiarity</td></tr>
+      <tr><td>C. Runbook only</td><td>Zero risk, zero spend, a correct doc for later</td><td>A public instance, the deploy learning now</td></tr>
+      <tr><td>D. Wrap</td><td>Closure, a shipped portfolio piece, moving on</td><td>The public URL, the remaining half of the original goal</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="foot">
+  <p><b>My recommendation:</b> B, Terraform. It directly serves the original "learn to deploy" goal while keeping teardown to one command, so the cost risk is bounded. The infra-as-code skill is the most transferable outcome of the four. If budget is the blocker, C costs nothing and leaves B open for later.</p>
+  <p style="margin-top:10px">All four keep the existing local instance and the GitHub repo intact. Nothing here is irreversible. Open this file any time to re-decide. <span style="font-family:var(--mono);font-size:12px">dothub / deploy-options.html</span></p>
+</div>
+
+</div>
+</body>
+</html>
