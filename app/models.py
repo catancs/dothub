@@ -44,6 +44,7 @@ class Setup(Base):
     latest_version: Mapped[int] = mapped_column(Integer, default=1)
     downloads: Mapped[int] = mapped_column(Integer, default=0)
     is_public: Mapped[bool] = mapped_column(Boolean, default=True)
+    agent: Mapped[str] = mapped_column(String(40), default="claude-code", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, onupdate=_utcnow)
 

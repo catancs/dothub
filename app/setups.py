@@ -23,7 +23,8 @@ def _load_latest(db, slug: str) -> tuple[Setup, SetupVersion]:
     )
     return s, v
 
-def publish(db, owner: User, title: str, description: str, files: dict, slug: str | None = None) -> dict:
+def publish(db, owner: User, title: str, description: str, files: dict,
+            slug: str | None = None, agent: str = "claude-code") -> dict:
     bundle.validate_files(files, settings.max_bundle_bytes)
     manifest = bundle.effects_manifest(files)
     manifest["title"] = title
@@ -40,11 +41,12 @@ def publish(db, owner: User, title: str, description: str, files: dict, slug: st
         existing.latest_version = version
         existing.title = title
         existing.description = description
+        existing.agent = agent
         setup = existing
     else:
         version = 1
         setup = Setup(owner_id=owner.id, slug=slug, title=title,
-                      description=description, latest_version=1)
+                      description=description, latest_version=1, agent=agent)
         db.add(setup)
         db.flush()
 
@@ -64,7 +66,7 @@ def preview(db, slug: str, include_files: bool = False, viewer: User | None = No
     out = {
         "slug": s.slug, "title": s.title, "description": s.description,
         "version": v.version, "effects": v.manifest_json, "files": sorted(files),
-        "author": author,
+        "author": author, "agent": s.agent,
     }
     if include_files:
         out["file_contents"] = files
@@ -146,7 +148,7 @@ def list_setups(db, query: str | None = None, limit: int = 50,
             "slug": s.slug, "title": s.title, "description": s.description,
             "downloads": s.downloads, "recent_pulls": recent,
             "runs_code": bool(v.manifest_json.get("runs_code")) if v.manifest_json else False,
-            "author": username, "tags": tags,
+            "author": username, "tags": tags, "agent": s.agent,
         })
     # Post-filter runs_code and tag in Python on the deserialized manifest,
     # after the limited query (see comment above).

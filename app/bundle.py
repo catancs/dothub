@@ -97,6 +97,24 @@ def effects_manifest(files: dict[str, str]) -> dict:
         except (ValueError, AttributeError):
             pass
 
+    settings_env: set[str] = set()
+    for sp in ("settings.json", "settings.local.json",
+               ".claude/settings.json", ".claude/settings.local.json"):
+        if sp not in files:
+            continue
+        try:
+            doc = json.loads(files[sp])
+            for event, entries in doc.get("hooks", {}).items():
+                for cmd in _walk_commands(entries):
+                    hooks.append({"event": event, "command": cmd})
+            status = doc.get("statusLine")
+            if isinstance(status, dict) and isinstance(status.get("command"), str):
+                hooks.append({"event": "statusLine", "command": status["command"]})
+            if isinstance(doc.get("env"), dict):
+                settings_env.update(doc["env"])
+        except (ValueError, AttributeError, TypeError):
+            pass
+
     mcp_servers = []
     if ".mcp.json" in files:
         try:
@@ -133,6 +151,8 @@ def effects_manifest(files: dict[str, str]) -> dict:
         "agents": sum(1 for p in files if p.startswith("agents/")),
         "rules": sum(1 for p in files if p == "CLAUDE.md" or p.startswith(".claude/rules/")),
         "plugins": len(plugins),
+        "output_styles": sum(1 for p in files if p.startswith(("output-styles/", ".claude/output-styles/"))),
+        "keybindings": 1 if "keybindings.json" in files or ".claude/keybindings.json" in files else 0,
     }
 
     secret_flags = []
@@ -157,12 +177,15 @@ def effects_manifest(files: dict[str, str]) -> dict:
         tags.append("commands")
     if counts["agents"] > 0:
         tags.append("agents")
+    if counts["output_styles"] > 0:
+        tags.append("output-styles")
 
     return {
         "hooks": hooks,
         "mcp_servers": mcp_servers,
         "plugins": plugins,
         "counts": counts,
+        "settings_env": sorted(settings_env),
         "runs_code": runs_code,
         "secret_flags": secret_flags,
         "tags": tags,

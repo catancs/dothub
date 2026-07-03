@@ -15,6 +15,7 @@
       {% for t in tags %}
       <a class="tag" href="/?tag={{ t }}">{{ t }}</a>
       {% endfor %}
+      {% set ai = agent_info(p.agent) %}<span class="ag" title="{{ ai.label }}"><span class="ag-ic-wrap"{% if ai.color %} style="color:{{ ai.color }}"{% endif %}>{{ ai.icon|safe }}</span>{{ ai.label }}</span>
       <span class="who"><span class="mini">{{ p.author[:2]|upper }}</span>{{ p.author }}</span>
     </div>
   </div>
@@ -61,11 +62,15 @@
     {% for flag in p.effects.secret_flags %}
     <div class="banner danger" style="margin-top:12px"><span class="ico">$</span><div><b>Possible secret detected.</b> <span class="mono" style="font-size:13px">{{ flag }}</span> Never install live tokens.</div></div>
     {% endfor %}
+    {% if p.effects.get('settings_env', []) %}
+    <div class="banner danger" style="margin-top:12px"><span class="ico">=</span><div><b>Sets environment variables:</b> <span class="mono" style="font-size:13px">{{ p.effects.get('settings_env', [])|join(', ') }}</span> Env vars can redirect API traffic. Review them before installing.</div></div>
+    {% endif %}
 
     <div class="stat-row">
       <div class="stat"><div class="n">{{ p.effects.hooks|length }}</div><div class="l">Hooks</div></div>
       <div class="stat"><div class="n">{{ p.effects.counts.plugins }}</div><div class="l">Plugins</div></div>
       <div class="stat"><div class="n">{{ p.effects.counts.skills }}</div><div class="l">Skills</div></div>
+      <div class="stat"><div class="n">{{ p.effects.counts.get('output_styles', 0) }}</div><div class="l">Output styles</div></div>
       <div class="stat"><div class="n">{{ p.files|length }}</div><div class="l">Files</div></div>
     </div>
 

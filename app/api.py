@@ -26,6 +26,7 @@ class PublishIn(BaseModel):
     title: str
     description: str = ""
     slug: str | None = None
+    agent: str = "claude-code"
     files: dict[str, str]
 
 def _resolve_user(request: Request, db: Session) -> User | None:
@@ -97,7 +98,7 @@ def api_get(slug: str, db: Session = Depends(get_session)):
 @router.post("/api/setups")
 def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
     try:
-        return setups.publish(db, user, body.title, body.description, body.files, body.slug)
+        return setups.publish(db, user, body.title, body.description, body.files, body.slug, body.agent)
     except bundle.BundleError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except setups.OwnershipError:

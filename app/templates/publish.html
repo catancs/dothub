@@ -20,11 +20,11 @@
   <div class="panel">
     <div class="panel-h"><h4>2. Ask your agent to publish</h4></div>
     <div class="panel-b">
-      <p class="sub" style="margin-top:0;font-size:14px">In a Claude Code session, ask it to publish your setup. It will gather your skills, commands, agents, hooks, MCP config, and plugins, preview the effects with you, then publish.</p>
+      <p class="sub" style="margin-top:0;font-size:14px">In a Claude Code session, ask it to publish your setup. It will gather your skills, commands, agents, hooks, MCP config, plugins, settings, and output styles, preview the effects with you, then publish.</p>
       <div class="hook"><div class="ev">The agent calls these tools in order</div>
         <pre class="cmd">prepare_setup(files)   # preview effects + secret flags, no publish
 publish_setup(title, description, files)   # writes to dothub after you approve</pre></div>
-      <p class="sub" style="font-size:14px">The agent is the export step. It reads your files with its own tools and sends them as a path-to-content map. dothub validates paths and size, computes the effects manifest, and shows it for review.</p>
+      <p class="sub" style="font-size:14px">The agent is the export step. It reads your files with its own tools and sends them as a path-to-content map. dothub validates paths and size, computes the effects manifest, and shows it for review. The full gather spec ships as the MCP server's instructions and at <a href="/llms.txt">/llms.txt</a>.</p>
     </div>
   </div>
 

@@ -37,6 +37,7 @@
       </div>
       <p class="desc">{{ item.description }}</p>
       <div class="card-foot">
+        {% set ai = agent_info(item.agent) %}<span class="ag" title="{{ ai.label }}"><span class="ag-ic-wrap"{% if ai.color %} style="color:{{ ai.color }}"{% endif %}>{{ ai.icon|safe }}</span>{{ ai.label }}</span>
         <span class="who"><span class="mini">{{ item.author[:2]|upper }}</span>{{ item.author }}</span>
         {% if tab == 'following' %}
         <span class="metric">{{ item.downloads }} pulls</span>

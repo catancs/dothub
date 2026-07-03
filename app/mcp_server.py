@@ -23,7 +23,78 @@ from .db import SessionLocal
 from .models import User, ApiKey
 from . import security, setups
 
-mcp = FastMCP("dothub")
+PUBLISHING_GUIDE = """\
+# dothub — agent publishing guide
+
+dothub is agent-first. There is no upload form and no server-side extractor:
+you, the coding agent, gather the user's Claude Code setup, preview its
+effects, and publish. This is the canonical gather spec.
+
+## Bundle layout (relative paths, UTF-8 text only)
+
+Gather from the user scope (~/.claude/) and, for project setups, the project
+(.claude/ and repo root). Map sources to these bundle paths:
+
+- skills/<name>/SKILL.md + text siblings  <- ~/.claude/skills/ or .claude/skills/
+- commands/**/*.md                        <- ~/.claude/commands/ or .claude/commands/
+- agents/**/*.md                          <- ~/.claude/agents/ or .claude/agents/
+- output-styles/**                        <- ~/.claude/output-styles/
+- keybindings.json                        <- ~/.claude/keybindings.json
+- CLAUDE.md                               <- global or project CLAUDE.md
+- .claude/rules/**                        <- project rules
+- settings.json, settings.local.json      <- ~/.claude/ or .claude/ settings.
+  Keep hooks, statusLine, env, permissions, enabledPlugins, outputStyle,
+  model. Strip anything secret-looking from env values before uploading.
+- .mcp.json                               <- project .mcp.json as-is. For
+  user-scope servers, copy ONLY the "mcpServers" object from ~/.claude.json
+  into .mcp.json. NEVER upload ~/.claude.json itself: it holds private state.
+- plugins.json                            <- synthesize; Claude Code has no
+  such file. Build
+    {"marketplaces": {"<mkt>": {"repo": "owner/repo"}},
+     "plugins": [{"name": "<plugin>", "marketplace": "<mkt>", "enabled": true}]}
+  from enabledPlugins in settings.json (keys are "plugin@marketplace") and
+  ~/.claude/plugins/known_marketplaces.json (source.repo). Skip disabled
+  plugins. Never upload plugin caches or install state.
+
+## Never include
+
+Memory (MEMORY.md, memory/), conversation history, credentials or live
+tokens, API keys in env values, .git/, node_modules/, *.db, binaries. Setups
+are text-only by design.
+
+## Limits
+
+500 files, 1 MB per file, 5 MB per bundle. Oversized publishes are rejected
+whole; trim file contents rather than silently dropping setup pieces.
+
+## Agent
+
+Pass your own `agent` slug to publish_setup so installers see provenance.
+Canonical slugs include: claude-code, codex, gemini-cli, copilot-cli,
+cursor-cli, opencode, aider, goose, qwen-code, crush, amp, warp, grok-cli
+(CLIs); copilot, cursor, windsurf, antigravity, amazon-q, kiro, junie, zed,
+trae, tabnine, qodo, augment, kilo-code, roo-code, continue, cline (editors);
+devin, jules, factory, openhands (async SWEs). Use the slug for your agent so
+provenance doesn't fragment; any other string still works, rendering with a
+generic icon and your slug as the label. Defaults to "claude-code" when omitted.
+
+## Flow
+
+1. prepare_setup(files) — dry run. Show the returned effects, secret_flags
+   and warnings to the user before publishing.
+2. publish_setup(title, description, files) — after explicit user approval.
+   Re-publishing the same slug creates a new version.
+
+Hooks, MCP servers, plugins and statusLine commands are shown to installers
+as "runs code" effects. Installers rely on your gathering being complete: a
+setup whose hooks you forgot advertises itself as safer than it is.
+
+Installing is the reverse: install_setup(slug) returns {files}; show the
+effects, get approval, then write files into ~/.claude/ (user scope) or the
+project .claude/.
+"""
+
+mcp = FastMCP("dothub", instructions=PUBLISHING_GUIDE)
 
 
 def _open_session():
@@ -58,21 +129,28 @@ def publish_setup(
     description: str,
     files: dict[str, str],
     slug: str | None = None,
+    agent: str = "claude-code",
 ) -> dict:
-    """Publish the caller's Claude Code setup. `files` is {relative_path: text_content}.
+    """Publish the caller's coding-agent setup. `files` is {relative_path: text_content}.
 
     Requires a valid `Authorization: Bearer <dothub-api-key>` header.
 
-    Gather convention (advisory): include skills/**/SKILL.md and siblings,
-    commands/**/*.md, agents/**/*.md, hooks/hooks.json, .mcp.json,
-    plugins.json, CLAUDE.md, .claude/rules/**. Exclude node_modules/, .git/,
-    *.db, dev-bundles/. The server enforces path safety and size, not the
-    convention. Call `prepare_setup` first to preview effects and secret flags.
+    `agent` declares which coding agent extracted this setup (e.g. "claude-code",
+    "codex", "cursor", "windsurf", "antigravity"). Shown to installers as a
+    provenance indicator. Pass your own identifier if not in that list.
+
+    Gather per the publishing guide (this server's MCP instructions, also at
+    GET /llms.txt): map ~/.claude and project .claude into bundle-root paths
+    (skills/, commands/, agents/, output-styles/, settings.json, CLAUDE.md,
+    .mcp.json), synthesize plugins.json from enabledPlugins, and never upload
+    ~/.claude.json, memory files, or secrets. The server enforces path safety
+    and size, not the convention. Call `prepare_setup` first to preview
+    effects and secret flags.
     """
     db = _open_session()
     try:
         user = _require_user(db)
-        return setups.publish(db, user, title, description, files, slug)
+        return setups.publish(db, user, title, description, files, slug, agent)
     finally:
         db.close()
 
@@ -135,11 +213,11 @@ def prepare_setup(files: dict[str, str]) -> dict:
     surface the returned `effects` and any `secret_flags` to the user, and only
     then call `publish_setup` once the user approves.
 
-    Gather convention (advisory, server accepts any safe paths):
-    include skills/**/SKILL.md (+ siblings), commands/**/*.md, agents/**/*.md,
-    hooks/hooks.json, .mcp.json, plugins.json, CLAUDE.md, .claude/rules/**.
-    Exclude node_modules/, .git/, *.db, dev-bundles/, and any file over the
-    per-file size cap. The server enforces path safety and size, not convention.
+    Gather per the publishing guide (this server's MCP instructions, also at
+    GET /llms.txt): map ~/.claude and project .claude into bundle-root paths,
+    synthesize plugins.json from enabledPlugins, exclude ~/.claude.json,
+    memory files, and secrets. The server enforces path safety and size, not
+    the convention.
     """
     from . import bundle as _bundle
     from .config import settings
