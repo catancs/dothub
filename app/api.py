@@ -106,13 +106,11 @@ def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session
 
 @router.post("/api/setups/{slug}/download")
 def api_download(slug: str, user: User = Depends(current_user), db: Session = Depends(get_session)):
-    from .storage import presign_get
     try:
-        res = setups.install(db, slug, user)  # increments downloads + records a pull
+        # increments downloads + records a pull; returns {slug, version, files, effects}
+        return setups.install(db, slug, user)
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
-    s, v = setups._load_latest(db, slug)
-    return {"url": presign_get(v.archive_key), "version": res["version"]}
 
 class RevertIn(BaseModel):
     version: int

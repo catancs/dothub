@@ -44,7 +44,7 @@ def test_authenticated_download_records_pull(client, s3, db):
     r = client.post("/api/setups/pull-flow/download")
     assert r.status_code == 200
     body = r.json()
-    assert "url" in body
+    assert "files" in body
     assert body["version"] == 1
 
     # the download incremented downloads and recorded a PullEvent

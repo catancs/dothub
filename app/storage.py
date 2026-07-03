@@ -27,15 +27,3 @@ def get_archive(key: str) -> bytes:
         return _local_path(key).read_bytes()
     obj = _client().get_object(Bucket=settings.s3_bucket, Key=key)
     return obj["Body"].read()
-
-
-def presign_get(key: str, expires: int = 3600) -> str:
-    if settings.storage_dir:
-        # ponytail: no presigning for local files, return a file:// URL the
-        # operator can open directly. Prod uses real presigned S3 URLs.
-        return _local_path(key).resolve().as_uri()
-    return _client().generate_presigned_url(
-        "get_object",
-        Params={"Bucket": settings.s3_bucket, "Key": key},
-        ExpiresIn=expires,
-    )

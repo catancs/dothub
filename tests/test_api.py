@@ -113,7 +113,7 @@ def test_list_ordering_and_runs_code(client, s3):
     # bump downloads on the plain setup so it sorts first (downloads desc)
     r = client.post("/api/setups/plain-flow/download")
     assert r.status_code == 200
-    assert "url" in r.json()
+    assert "files" in r.json()
 
     listing = client.get("/api/setups").json()
     slugs = [s["slug"] for s in listing]

@@ -97,7 +97,7 @@ def test_download_non_public_owner_returns_200(client, s3):
     # the same session (owner) can still download their own private setup
     r = client.post(f"/api/setups/{slug}/download")
     assert r.status_code == 200
-    assert "url" in r.json()
+    assert "files" in r.json()
 
 
 def test_download_public_allows_any_logged_in_user(client, s3):
@@ -111,4 +111,4 @@ def test_download_public_allows_any_logged_in_user(client, s3):
     client.post("/api/signup", json={"username": "grabber", "email": "grabber@x.com", "password": "pw123456"})
     r = client.post(f"/api/setups/{slug}/download")
     assert r.status_code == 200
-    assert "url" in r.json()
+    assert "files" in r.json()
