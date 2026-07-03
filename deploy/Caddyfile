@@ -1,0 +1,6 @@
+# Replace dothub.nl with your domain. Caddy fetches + auto-renews the TLS cert
+# once DNS points at this box; it retries until DNS resolves, so there is no
+# ordering dependency between provisioning and the A-record.
+dothub.nl {
+    reverse_proxy localhost:8000
+}
