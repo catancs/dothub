@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}FAQ - dothub{% endblock %}
+{% block body %}
+<section class="screen active">
+  <div class="phead">
+    <div class="eyebrow">Help</div>
+    <h1 class="big">Frequently asked<br><em>questions</em>.</h1>
+    <p class="sub">How dothub works: publishing your Claude Code setup from your agent, reading the effects manifest, and installing other people's setups safely.</p>
+  </div>
+
+  <style>
+    .faq{margin-top:26px}
+    details.qa{border:2px solid var(--line);border-radius:14px;margin-bottom:12px;background:var(--surface);overflow:hidden}
+    details.qa[open]{border-color:var(--blue)}
+    details.qa>summary{list-style:none;cursor:pointer;padding:17px 20px;display:flex;align-items:center;gap:14px;
+      font-family:var(--serif);font-weight:700;font-size:18px;letter-spacing:-.01em;color:var(--ink)}
+    details.qa>summary::-webkit-details-marker{display:none}
+    details.qa>summary .tw{flex:none;font-family:var(--mono);font-weight:700;font-size:17px;color:var(--amber);transition:transform .2s}
+    details.qa[open]>summary .tw{transform:rotate(45deg)}
+    details.qa .a{padding:0 20px 20px 20px;color:var(--ink-2);font-size:15px;max-width:70ch}
+    details.qa .a p{margin-top:0}
+    details.qa .a p + p{margin-top:11px}
+    details.qa .a code{font-family:var(--mono);font-size:13px;background:var(--surface-2);padding:1.5px 6px;border-radius:6px;color:var(--ink)}
+    details.qa .a a{color:var(--blue-700);font-weight:600}
+    details.qa .a ul{margin:10px 0 0;padding-left:20px}
+    details.qa .a li{margin-bottom:5px}
+  </style>
+
+  <div class="faq">
+
+    <details class="qa" open>
+      <summary><span class="tw">+</span>What is dothub?</summary>
+      <div class="a">
+        <p>dothub is a hub for sharing your whole coding-agent setup. Publish your Claude Code configuration, browse a public feed of other people's setups, and pull setups into your own environment. It is one app: a remote MCP server your agent talks to, plus a web feed you read in the browser.</p>
+        <p>It is agent-first by design. Setups are text-only: your <code>CLAUDE.md</code>, skills, commands, agents, hooks, MCP config, plugins and settings.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>How do I publish my Claude Code setup?</summary>
+      <div class="a">
+        <p>Publishing is agent-native. You do not fill in a form or run an export script. Instead:</p>
+        <ul>
+          <li>Add the dothub remote MCP server to Claude Code (see the question below).</li>
+          <li>In a Claude Code session, say something like <em>"publish my Claude Code setup to dothub as my-flow"</em>.</li>
+          <li>The agent gathers your files, previews the effects with you, and publishes once you approve.</li>
+        </ul>
+        <p>Under the hood the agent calls <code>prepare_setup(files)</code> to preview, then <code>publish_setup(title, description, files)</code> after you say yes. Your setup gets a public page at <code>/s/&lt;slug&gt;</code>.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>Why is there no upload form or upload button?</summary>
+      <div class="a">
+        <p>Deliberately. The dothub server never reads your disk - your coding agent does. The agent is the export step: it reads your files with its own tools and sends them as a path-to-content map. dothub validates the paths and size, computes the effects manifest, and shows it for review.</p>
+        <p>This keeps publishing honest about what a setup actually does, and means there is no server-side extractor guessing at your config.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>What gets captured when I publish?</summary>
+      <div class="a">
+        <p>Your agent gathers from your user scope (<code>~/.claude/</code>) and, for project setups, the project <code>.claude/</code> and repo root. The captured pieces are:</p>
+        <ul>
+          <li><code>CLAUDE.md</code></li>
+          <li><code>skills/</code></li>
+          <li><code>commands/</code></li>
+          <li><code>agents/</code></li>
+          <li><code>hooks/hooks.json</code></li>
+          <li><code>.mcp.json</code></li>
+          <li>plus <code>output-styles/</code>, <code>settings.json</code>, and a synthesized <code>plugins.json</code> where present.</li>
+        </ul>
+        <p>Setups are text-only. Limits are 500 files, 1 MB per file, and 5 MB per bundle. Oversized publishes are rejected whole, so trim contents rather than dropping whole pieces.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>How do I avoid uploading secrets?</summary>
+      <div class="a">
+        <p>The effects manifest flags secret-looking patterns - things like <code>sk-...</code>, <code>AKIA...</code>, and PRIVATE KEY blocks - under <code>secret_flags</code>. But that flagging is a safety net, not a guarantee: <strong>you</strong> are responsible for not publishing tokens.</p>
+        <p>Don't publish <code>.env</code>, live tokens, or anything with credentials in it. Your agent should never upload <code>~/.claude.json</code> (it holds private state), memory files, or conversation history. Review the <code>secret_flags</code> in the preview before you approve a publish.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>What is the "effects manifest" and why does it matter?</summary>
+      <div class="a">
+        <p>The effects manifest is the summary of what a setup will actually do on your machine. It shows:</p>
+        <ul>
+          <li>Every hook command, verbatim.</li>
+          <li>A <code>runs_code</code> flag - whether the setup executes code via hooks, MCP servers, plugins, or a statusLine command.</li>
+          <li><code>secret_flags</code> - any secret-looking strings detected in the files.</li>
+          <li>The MCP servers and plugins it adds.</li>
+        </ul>
+        <p>It is shown to you before you publish (via <code>prepare_setup</code>) and to installers before they install (via preview). Read it. A setup whose hooks were not gathered advertises itself as safer than it really is, so completeness matters.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>How do I install someone else's setup?</summary>
+      <div class="a">
+        <p>Always preview first. In a Claude Code session: <em>"preview their-slug"</em> to see the effects manifest, review it, then <em>"install their-slug"</em> to have the agent write the files into your <code>~/.claude/</code> (user scope) or the project <code>.claude/</code>.</p>
+        <p>The agent writes files only after you approve. Installing code that runs on your machine - hooks, MCP servers, plugins - is your responsibility, so read the effects manifest before you say yes.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>Do I need an account or an API key?</summary>
+      <div class="a">
+        <p>Browsing the public feed needs nothing. To publish or install you need an account and an API key.</p>
+        <p>Sign up, then mint a key on your <a href="/account">Account</a> page. Keys are Bearer tokens that start with <code>dh_</code>, and the key value is shown only once - copy it when it appears.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>How do I add the remote MCP server to Claude Code?</summary>
+      <div class="a">
+        <p>Mint a <code>dh_</code> key on your Account page, then add dothub to Claude Code from a terminal:</p>
+        <p><code>claude mcp add --transport http dothub {{ request.base_url }}mcp/ --header "Authorization: Bearer dh_your_key"</code></p>
+        <p>Once connected, your agent can publish, preview, install, and search setups directly. The full gather spec ships as the MCP server's instructions and at <a href="/llms.txt">/llms.txt</a>.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>Can I keep a setup private?</summary>
+      <div class="a">
+        <p>Yes. Setups are public by default, but dothub supports non-public setups. A non-public setup is hidden from the discovery feed and from your public profile, and only you - the owner - can preview or install it. Strangers get a not-found response.</p>
+        <p>Use this for a work-in-progress or a personal configuration you want backed up on dothub without sharing it yet.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>Does dothub only work with Claude Code?</summary>
+      <div class="a">
+        <p>Claude Code is the primary agent, but publishing records provenance for other coding agents too. When a setup is published, the agent passes its own slug - <code>claude-code</code>, <code>codex</code>, <code>cursor</code>, <code>gemini-cli</code>, <code>windsurf</code> and many others - so installers can see where a setup came from. It defaults to <code>claude-code</code> when omitted.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="tw">+</span>Is dothub free?</summary>
+      <div class="a">
+        <p>Yes - dothub is free to use. Sign up, mint a key, and publish or install setups at no cost. It also runs with zero infrastructure locally (SQLite and local disk), so you can self-host your own instance if you prefer.</p>
+      </div>
+    </details>
+
+  </div>
+
+  <div class="panel" style="margin-top:34px">
+    <div class="panel-h"><h4>Ready to share your setup?</h4></div>
+    <div class="panel-b">
+      <p class="sub" style="margin-top:0;font-size:14px">Head to the <a href="/publish" style="color:var(--blue-700);font-weight:600">Publish</a> page for the three-step walkthrough, or mint a key on your <a href="/account" style="color:var(--blue-700);font-weight:600">Account</a> page and ask your agent to publish.</p>
+    </div>
+  </div>
+
+</section>
+{% endblock %}
