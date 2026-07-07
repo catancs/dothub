@@ -29,6 +29,7 @@ class PublishIn(BaseModel):
     description: str = ""
     slug: str | None = None
     agent: str = "claude-code"
+    is_public: bool = True
     files: dict[str, str]
 
 def _resolve_user(request: Request, db: Session) -> User | None:
@@ -105,16 +106,17 @@ def api_list(q: str | None = None, db: Session = Depends(get_session)):
     return setups.list_setups(db, query=q)
 
 @router.get("/api/setups/{slug}")
-def api_get(slug: str, db: Session = Depends(get_session)):
+def api_get(slug: str, user: User | None = Depends(optional_user), db: Session = Depends(get_session)):
     try:
-        return setups.preview(db, slug)
+        return setups.preview(db, slug, viewer=user)
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
 
 @router.post("/api/setups")
 def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
     try:
-        return setups.publish(db, user, body.title, body.description, body.files, body.slug, body.agent)
+        return setups.publish(db, user, body.title, body.description, body.files,
+                              body.slug, body.agent, is_public=body.is_public)
     except bundle.BundleError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except setups.OwnershipError:
@@ -129,6 +131,18 @@ def api_download(slug: str, user: User = Depends(current_user), db: Session = De
         return setups.install(db, slug, user)
     except setups.NotFound:
         raise HTTPException(status_code=404, detail="not found")
+
+class VisibilityIn(BaseModel):
+    is_public: bool
+
+@router.post("/api/setups/{slug}/visibility")
+def api_set_visibility(slug: str, body: VisibilityIn, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    try:
+        return setups.set_visibility(db, user, slug, body.is_public)
+    except setups.NotFound:
+        raise HTTPException(status_code=404, detail="not found")
+    except setups.OwnershipError:
+        raise HTTPException(status_code=403, detail="not your setup")
 
 class RevertIn(BaseModel):
     version: int

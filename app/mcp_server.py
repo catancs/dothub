@@ -130,10 +130,17 @@ def publish_setup(
     files: dict[str, str],
     slug: str | None = None,
     agent: str = "claude-code",
+    public: bool = False,
 ) -> dict:
     """Publish the caller's coding-agent setup. `files` is {relative_path: text_content}.
 
     Requires a valid `Authorization: Bearer <dothub-api-key>` header.
+
+    Published PRIVATELY by default: a private setup is visible only to its owner
+    and is hidden from the public feed, search, and everyone else. Tell the user
+    it landed privately and that they choose when to go public — they open the
+    setup's page and click "Publish to everyone" (or pass public=true here to
+    publish immediately). The response's `is_public` reflects the result.
 
     `agent` declares which coding agent extracted this setup (e.g. "claude-code",
     "codex", "cursor", "windsurf", "antigravity"). Shown to installers as a
@@ -150,7 +157,8 @@ def publish_setup(
     db = _open_session()
     try:
         user = _require_user(db)
-        return setups.publish(db, user, title, description, files, slug, agent)
+        return setups.publish(db, user, title, description, files, slug, agent,
+                              is_public=public)
     finally:
         db.close()
 
@@ -158,11 +166,14 @@ def publish_setup(
 def preview_setup(slug: str) -> dict:
     """Return the effects manifest + file list for a setup, WITHOUT installing.
 
-    Show this to the user first so they can review what the setup does.
+    Show this to the user first so they can review what the setup does. The
+    caller is authenticated, so this also previews the caller's own private
+    setups (a private setup stays hidden from everyone else).
     """
     db = _open_session()
     try:
-        return setups.preview(db, slug)
+        user = _require_user(db)
+        return setups.preview(db, slug, viewer=user)
     finally:
         db.close()
 

@@ -27,7 +27,8 @@ def _load_latest(db, slug: str) -> tuple[Setup, SetupVersion]:
     return s, v
 
 def publish(db, owner: User, title: str, description: str, files: dict,
-            slug: str | None = None, agent: str = "claude-code") -> dict:
+            slug: str | None = None, agent: str = "claude-code",
+            is_public: bool = True) -> dict:
     # Gated, default OFF. When enabled, an unverified user cannot publish (via
     # API or the MCP publish tool, which both route through here).
     if settings.require_email_verification and not owner.email_verified:
@@ -53,7 +54,8 @@ def publish(db, owner: User, title: str, description: str, files: dict,
     else:
         version = 1
         setup = Setup(owner_id=owner.id, slug=slug, title=title,
-                      description=description, latest_version=1, agent=agent)
+                      description=description, latest_version=1, agent=agent,
+                      is_public=is_public)
         db.add(setup)
         db.flush()
 
@@ -62,7 +64,19 @@ def publish(db, owner: User, title: str, description: str, files: dict,
     db.add(SetupVersion(setup_id=setup.id, version=version, manifest_json=manifest,
                         archive_key=key, size_bytes=len(archive)))
     db.commit()
-    return {"slug": slug, "version": version, "url": f"{settings.base_url}/s/{slug}"}
+    return {"slug": slug, "version": version, "url": f"{settings.base_url}/s/{slug}",
+            "is_public": setup.is_public}
+
+def set_visibility(db, owner: User, slug: str, is_public: bool) -> dict:
+    """Owner-only toggle of a setup's public visibility (private ⇄ public)."""
+    s = db.scalar(select(Setup).where(Setup.slug == slug))
+    if not s:
+        raise NotFound(slug)
+    if s.owner_id != owner.id:
+        raise OwnershipError(slug)
+    s.is_public = is_public
+    db.commit()
+    return {"slug": slug, "is_public": is_public}
 
 def preview(db, slug: str, include_files: bool = False, viewer: User | None = None) -> dict:
     s, v = _load_latest(db, slug)
@@ -73,7 +87,7 @@ def preview(db, slug: str, include_files: bool = False, viewer: User | None = No
     out = {
         "slug": s.slug, "title": s.title, "description": s.description,
         "version": v.version, "effects": v.manifest_json, "files": sorted(files),
-        "author": author, "agent": s.agent,
+        "author": author, "agent": s.agent, "is_public": s.is_public,
     }
     if include_files:
         out["file_contents"] = files

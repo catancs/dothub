@@ -68,7 +68,10 @@
         <h3>{{ item.setup.title }}</h3>
         <div class="slug"><b>{{ profile.username }}</b>/{{ item.setup.slug }}</div>
       </div>
-      <span class="vtag">v{{ item.setup.latest_version }}</span>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        {% if not item.setup.is_public %}<span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:999px;background:#fdeecd;color:#8a5a00">Private</span>{% endif %}
+        <span class="vtag">v{{ item.setup.latest_version }}</span>
+      </div>
     </div>
     <div class="card-foot">
       <span class="metric">{{ item.setup.downloads }} pulls</span>

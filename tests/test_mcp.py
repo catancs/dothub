@@ -21,15 +21,19 @@ def test_mcp_publish_preview_install_list(db, s3, monkeypatch):
 
     res = mcp_server.publish_setup("My Flow", "d", {"CLAUDE.md": "x"})
     assert res["slug"] == "my-flow"
+    assert res["is_public"] is False  # agent publishes land private by default
 
+    # owner can preview + install their own private setup via MCP
     prev = mcp_server.preview_setup("my-flow")
     assert prev["effects"]["runs_code"] is False
 
     inst = mcp_server.install_setup("my-flow")
     assert inst["files"] == {"CLAUDE.md": "x"}
 
-    listing = mcp_server.list_setups()
-    assert any(s["slug"] == "my-flow" for s in listing)
+    # a private setup is NOT on the public feed until the owner publishes it
+    assert not any(s["slug"] == "my-flow" for s in mcp_server.list_setups())
+    setups.set_visibility(db, u, "my-flow", True)
+    assert any(s["slug"] == "my-flow" for s in mcp_server.list_setups())
 
 
 def test_mcp_publish_requires_key(db, s3, monkeypatch):
