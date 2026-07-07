@@ -73,6 +73,7 @@ def signup(body: SignupIn, request: Request, db: Session = Depends(get_session))
     db.add(u); db.commit()
     request.session["uid"] = u.id
     email.send_verification_email(u.email, f"{settings.base_url}/verify/{token}")
+    email.send_signup_notification(u.username, u.email)
     return {"id": u.id, "username": u.username}
 
 @router.post("/api/login")

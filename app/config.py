@@ -16,6 +16,8 @@ class Settings:
     ses_region = os.getenv("SES_REGION", os.getenv("AWS_REGION", "eu-north-1"))
     email_from = os.getenv("EMAIL_FROM", "no-reply@dothub.nl")
     require_email_verification = os.getenv("REQUIRE_EMAIL_VERIFICATION", "").lower() in {"1", "true", "yes"}
+    # When set, the site admin gets an email each time a new user signs up.
+    admin_notify_email = os.getenv("ADMIN_NOTIFY_EMAIL")
 
 settings = Settings()
 

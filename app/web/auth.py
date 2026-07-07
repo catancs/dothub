@@ -93,6 +93,7 @@ def signup_submit(
     db.commit()
     request.session["uid"] = user.id
     mailer.send_verification_email(user.email, f"{settings.base_url}/verify/{token}")
+    mailer.send_signup_notification(user.username, user.email)
     return RedirectResponse("/", status_code=303)
 
 
