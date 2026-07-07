@@ -35,7 +35,7 @@ mkdir -p "$DATA_DIR/bundles" "$DATA_DIR/backups"
 
 # --- code ---
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" pull --ff-only
+  sudo -u dothub git -C "$APP_DIR" pull --ff-only
 else
   git clone "$REPO_URL" "$APP_DIR"
 fi
