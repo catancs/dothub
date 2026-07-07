@@ -18,6 +18,8 @@ class Settings:
     require_email_verification = os.getenv("REQUIRE_EMAIL_VERIFICATION", "").lower() in {"1", "true", "yes"}
     # When set, the site admin gets an email each time a new user signs up.
     admin_notify_email = os.getenv("ADMIN_NOTIFY_EMAIL")
+    # When set (a Fernet key), setup bundles are encrypted at rest on disk/S3.
+    storage_encryption_key = os.getenv("STORAGE_ENCRYPTION_KEY")
 
 settings = Settings()
 
