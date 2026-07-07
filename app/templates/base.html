@@ -40,6 +40,21 @@
   </div>
 </header>
 
+{% if user and not user.email_verified %}
+<div style="background:#fdeecd;color:#8a5a00;border-bottom:1px solid #e0a63c;padding:10px 24px;font-size:14px;text-align:center;font-family:var(--sans)">
+  Verify your email to publish setups. Check your inbox for the link, or
+  <button type="button" onclick="resendVerify(this)" style="background:none;border:none;color:#8a5a00;font-weight:700;text-decoration:underline;cursor:pointer;font:inherit;padding:0">resend it</button>.
+</div>
+<script>
+function resendVerify(btn){
+  btn.disabled = true; btn.textContent = 'sending...';
+  fetch('/api/resend-verification', {method: 'POST'})
+    .then(function(r){ btn.textContent = r.ok ? 'sent - check your inbox' : 'could not resend'; })
+    .catch(function(){ btn.textContent = 'could not resend'; });
+}
+</script>
+{% endif %}
+
 <main>
 {% block body %}{% endblock %}
 </main>
