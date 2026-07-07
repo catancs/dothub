@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
+from app import avatars
 from app.api import optional_user
 from app.db import get_session
 from app.models import User, Setup, SetupVersion, ApiKey, Follow, PullEvent
@@ -84,6 +85,60 @@ def account_update(
     user.link_x = link_x or None
     db.commit()
     return RedirectResponse("/account", 303)
+
+
+@router.post("/account/avatar")
+def account_avatar(
+    request: Request,
+    avatar: UploadFile = File(...),
+    db: Session = Depends(get_session),
+):
+    user = optional_user(request, db)
+    if user is None:
+        return RedirectResponse("/login", 303)
+    data = avatar.file.read()
+    try:
+        key = avatars.save_avatar(user.id, avatar.content_type, data)
+    except ValueError as e:
+        # Invalid upload: re-render /account with an error, DB untouched.
+        counts = _counts(db, user)
+        keys = db.scalars(
+            select(ApiKey)
+            .where(ApiKey.user_id == user.id)
+            .order_by(ApiKey.created_at.desc())
+        ).all()
+        setups = _setups_with_flags(db, user)
+        return render(
+            request,
+            "account.html",
+            {
+                "profile": user,
+                "counts": counts,
+                "keys": keys,
+                "setups": setups,
+                "avatar_error": str(e),
+            },
+            user=user,
+        )
+    user.avatar_path = key
+    db.commit()
+    return RedirectResponse("/account", 303)
+
+
+@router.get("/avatar/{username}")
+def avatar_serve(username: str, db: Session = Depends(get_session)):
+    target = db.scalar(select(User).where(User.username == username))
+    if target is None or not target.avatar_path:
+        raise HTTPException(status_code=404, detail="no avatar")
+    try:
+        data, content_type = avatars.read_avatar(target.avatar_path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="no avatar")
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 @router.get("/u/{username}")

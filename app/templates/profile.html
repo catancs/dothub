@@ -2,7 +2,7 @@
 {% block title %}{{ profile.display_name or profile.username }} · dothub{% endblock %}
 {% block body %}
 <div class="profile-hero">
-  <div class="pf-av">{{ (profile.display_name or profile.username)[:2]|upper }}</div>
+  <div class="pf-av">{% if profile.avatar_path %}<img class="pf-av-img" src="/avatar/{{ profile.username }}" alt="{{ profile.username }}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">{% else %}{{ (profile.display_name or profile.username)[:2]|upper }}{% endif %}</div>
   <div style="flex:1;min-width:240px">
     <div class="pf-name">{{ profile.display_name or profile.username }}</div>
     <div class="pf-handle">@{{ profile.username }}</div>
