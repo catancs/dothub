@@ -22,6 +22,12 @@ class User(Base):
     link_github: Mapped[str | None] = mapped_column(String(200), nullable=True)
     link_linkedin: Mapped[str | None] = mapped_column(String(200), nullable=True)
     link_x: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # email verification (signup soundness workstream)
+    email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    verification_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    verification_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # profile picture: storage key under STORAGE_DIR, e.g. "avatars/3.png"
+    avatar_path: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
 
 class ApiKey(Base):

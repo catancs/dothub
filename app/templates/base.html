@@ -17,6 +17,7 @@
     <nav class="nav-links">
       <a href="/" class="{% if request.url.path == '/' %}on{% endif %}">Discover</a>
       <a href="/publish" class="{% if request.url.path == '/publish' %}on{% endif %}">Publish</a>
+      <a href="/faq" class="{% if request.url.path == '/faq' %}on{% endif %}">FAQ</a>
       {% if user %}
       <a href="/?tab=following">Following</a>
       <a href="/history" class="{% if request.url.path == '/history' %}on{% endif %}">History</a>
@@ -28,7 +29,11 @@
     </nav>
     <div class="nav-right">
       {% if user %}
+      {% if user.avatar_path %}
+      <img class="avatar avatar-img" src="/avatar/{{ user.username }}" alt="{{ user.username }}">
+      {% else %}
       <div class="avatar">{{ user.username[:2]|upper }}</div>
+      {% endif %}
       <form method="post" action="/logout" style="display:inline"><button type="submit" class="ghost-btn">Log out</button></form>
       {% endif %}
     </div>
