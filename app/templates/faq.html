@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}FAQ - dothub{% endblock %}
 {% block body %}
-<section class="screen active">
+<section class="screen active" style="max-width:820px;margin:0 auto">
   <div class="phead">
     <div class="eyebrow">Help</div>
     <h1 class="big">Frequently asked<br><em>questions</em>.</h1>
@@ -17,7 +17,7 @@
     details.qa>summary::-webkit-details-marker{display:none}
     details.qa>summary .tw{flex:none;font-family:var(--mono);font-weight:700;font-size:17px;color:var(--amber);transition:transform .2s}
     details.qa[open]>summary .tw{transform:rotate(45deg)}
-    details.qa .a{padding:0 20px 20px 20px;color:var(--ink-2);font-size:15px;max-width:70ch}
+    details.qa .a{padding:0 20px 20px 20px;color:var(--ink-2);font-size:15px}
     details.qa .a p{margin-top:0}
     details.qa .a p + p{margin-top:11px}
     details.qa .a code{font-family:var(--mono);font-size:13px;background:var(--surface-2);padding:1.5px 6px;border-radius:6px;color:var(--ink)}
