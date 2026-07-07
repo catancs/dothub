@@ -11,6 +11,11 @@ class Settings:
     session_secret = os.getenv("SESSION_SECRET", "dev-secret-change-me")
     max_bundle_bytes = int(os.getenv("MAX_BUNDLE_BYTES", str(5 * 1024 * 1024)))
     max_file_bytes = int(os.getenv("MAX_FILE_BYTES", str(1024 * 1024)))
+    # email verification (AWS SES). ses_sender falsy -> dev/test mode: no SES call.
+    ses_sender = os.getenv("SES_SENDER")
+    ses_region = os.getenv("SES_REGION", os.getenv("AWS_REGION", "eu-north-1"))
+    email_from = os.getenv("EMAIL_FROM", "no-reply@dothub.nl")
+    require_email_verification = os.getenv("REQUIRE_EMAIL_VERIFICATION", "").lower() in {"1", "true", "yes"}
 
 settings = Settings()
 

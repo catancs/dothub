@@ -10,6 +10,9 @@ class OwnershipError(Exception):
 class NotFound(Exception):
     pass
 
+class EmailNotVerified(Exception):
+    pass
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -25,6 +28,10 @@ def _load_latest(db, slug: str) -> tuple[Setup, SetupVersion]:
 
 def publish(db, owner: User, title: str, description: str, files: dict,
             slug: str | None = None, agent: str = "claude-code") -> dict:
+    # Gated, default OFF. When enabled, an unverified user cannot publish (via
+    # API or the MCP publish tool, which both route through here).
+    if settings.require_email_verification and not owner.email_verified:
+        raise EmailNotVerified()
     bundle.validate_files(files, settings.max_bundle_bytes)
     manifest = bundle.effects_manifest(files)
     manifest["title"] = title

@@ -11,5 +11,12 @@ def validate_signup(username: str, email: str, password: str) -> None:
     _, parsed = parseaddr(email or "")
     if "@" not in parsed or "." not in parsed.split("@")[-1]:
         raise ValueError("email is not valid")
-    if len(password or "") < 8:
-        raise ValueError("password must be at least 8 characters")
+    pw = password or ""
+    if len(pw) < 10:
+        raise ValueError("password must be at least 10 characters")
+    if not any(c.islower() for c in pw):
+        raise ValueError("password must include a lowercase letter")
+    if not any(c.isupper() for c in pw):
+        raise ValueError("password must include an uppercase letter")
+    if not any(c.isdigit() for c in pw):
+        raise ValueError("password must include a number")

@@ -21,3 +21,10 @@ def hash_api_key(plain: str) -> str:
 def generate_api_key() -> tuple[str, str]:
     plain = "dh_" + secrets.token_urlsafe(32)
     return plain, hash_api_key(plain)
+
+
+def generate_verification_token() -> tuple[str, str]:
+    """Return (plain, sha256hex). The plain token goes in the verify link; only
+    its hash is stored (mirrors generate_api_key/hash_api_key)."""
+    plain = secrets.token_urlsafe(32)
+    return plain, hash_api_key(plain)

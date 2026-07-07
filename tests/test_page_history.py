@@ -5,7 +5,7 @@ Uses the TestClient `client` fixture (keeps the session cookie set by
 """
 
 
-def _signup(client, username, password="pw123456"):
+def _signup(client, username, password="Testpass123"):
     r = client.post("/api/signup",
                     json={"username": username, "email": f"{username}@x.io", "password": password})
     assert r.status_code == 200, r.text

@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .db import get_session
 from .models import User, ApiKey, Follow
-from . import bundle, security, setups
+from . import bundle, security, setups, email
+from .config import settings
 from .validation import validate_signup
 from .ratelimit import limiter
 
@@ -64,8 +66,12 @@ def signup(body: SignupIn, request: Request, db: Session = Depends(get_session))
         raise HTTPException(status_code=400, detail="username or email taken")
     u = User(username=body.username, email=body.email,
              password_hash=security.hash_password(body.password))
+    token, token_hash = security.generate_verification_token()
+    u.verification_token_hash = token_hash
+    u.verification_sent_at = datetime.now(timezone.utc)
     db.add(u); db.commit()
     request.session["uid"] = u.id
+    email.send_verification_email(u.email, f"{settings.base_url}/verify/{token}")
     return {"id": u.id, "username": u.username}
 
 @router.post("/api/login")
@@ -76,6 +82,16 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_session)):
         raise HTTPException(status_code=401, detail="bad credentials")
     request.session["uid"] = u.id
     return {"id": u.id, "username": u.username}
+
+@router.post("/api/resend-verification")
+@limiter.limit("3/hour")
+def resend_verification(request: Request, user: User = Depends(current_user), db: Session = Depends(get_session)):
+    token, token_hash = security.generate_verification_token()
+    user.verification_token_hash = token_hash
+    user.verification_sent_at = datetime.now(timezone.utc)
+    db.commit()
+    email.send_verification_email(user.email, f"{settings.base_url}/verify/{token}")
+    return {"ok": True}
 
 @router.post("/api/keys")
 @limiter.limit("5/minute")
@@ -103,6 +119,8 @@ def api_publish(body: PublishIn, user: User = Depends(current_user), db: Session
         raise HTTPException(status_code=400, detail=str(e))
     except setups.OwnershipError:
         raise HTTPException(status_code=403, detail="slug owned by another user")
+    except setups.EmailNotVerified:
+        raise HTTPException(status_code=403, detail="verify your email before publishing")
 
 @router.post("/api/setups/{slug}/download")
 def api_download(slug: str, user: User = Depends(current_user), db: Session = Depends(get_session)):

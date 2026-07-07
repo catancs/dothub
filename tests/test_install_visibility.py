@@ -56,7 +56,7 @@ def test_install_allows_public_to_anyone(db, s3):
 
 def test_download_non_public_non_owner_returns_404(client, s3):
     # owner signs up, publishes, then makes the setup private
-    client.post("/api/signup", json={"username": "downo", "email": "downo@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "downo", "email": "downo@x.com", "password": "Testpass123"})
     key = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
     r = client.post("/api/setups",
                     headers={"Authorization": f"Bearer {key}"},
@@ -73,13 +73,13 @@ def test_download_non_public_non_owner_returns_404(client, s3):
     dbs.commit(); dbs.close()
 
     # a different logged-in user cannot download it
-    client.post("/api/signup", json={"username": "peeker", "email": "peeker@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "peeker", "email": "peeker@x.com", "password": "Testpass123"})
     r = client.post(f"/api/setups/{slug}/download")
     assert r.status_code == 404
 
 
 def test_download_non_public_owner_returns_200(client, s3):
-    client.post("/api/signup", json={"username": "owno", "email": "owno@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "owno", "email": "owno@x.com", "password": "Testpass123"})
     key = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
     r = client.post("/api/setups",
                     headers={"Authorization": f"Bearer {key}"},
@@ -101,14 +101,14 @@ def test_download_non_public_owner_returns_200(client, s3):
 
 
 def test_download_public_allows_any_logged_in_user(client, s3):
-    client.post("/api/signup", json={"username": "pubo", "email": "pubo@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "pubo", "email": "pubo@x.com", "password": "Testpass123"})
     r = client.post("/api/setups", json={"title": "Public Flow", "description": "d",
                                          "files": {"CLAUDE.md": "x"}})
     assert r.status_code == 200
     slug = r.json()["slug"]
 
     # a second, unrelated user can download the public setup
-    client.post("/api/signup", json={"username": "grabber", "email": "grabber@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "grabber", "email": "grabber@x.com", "password": "Testpass123"})
     r = client.post(f"/api/setups/{slug}/download")
     assert r.status_code == 200
     assert "files" in r.json()

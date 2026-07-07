@@ -1,6 +1,6 @@
 def test_signup_login_key_publish_flow(client, s3):
     # signup logs the user in (session cookie kept by TestClient)
-    r = client.post("/api/signup", json={"username": "cata", "email": "c@x.com", "password": "pw123456"})
+    r = client.post("/api/signup", json={"username": "cata", "email": "c@x.com", "password": "Testpass123"})
     assert r.status_code == 200
 
     r = client.post("/api/keys", json={"label": "cli"})
@@ -31,7 +31,7 @@ def test_publish_requires_auth(client, s3):
 
 def test_publish_bad_bundle_returns_400(client, s3):
     # signup mints a session; mint a Bearer key mirroring the publish-flow test
-    r = client.post("/api/signup", json={"username": "bad", "email": "bad@x.com", "password": "pw123456"})
+    r = client.post("/api/signup", json={"username": "bad", "email": "bad@x.com", "password": "Testpass123"})
     assert r.status_code == 200
     key = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
 
@@ -45,7 +45,7 @@ def test_publish_bad_bundle_returns_400(client, s3):
 
 def test_publish_to_others_slug_returns_403(client, s3):
     # user A publishes slug "x"
-    ra = client.post("/api/signup", json={"username": "alice", "email": "alice@x.com", "password": "pw123456"})
+    ra = client.post("/api/signup", json={"username": "alice", "email": "alice@x.com", "password": "Testpass123"})
     assert ra.status_code == 200
     key_a = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
     r = client.post("/api/setups",
@@ -55,7 +55,7 @@ def test_publish_to_others_slug_returns_403(client, s3):
     assert r.json()["slug"] == "x"
 
     # user B (different account + own key) tries to publish the same slug -> 403
-    rb = client.post("/api/signup", json={"username": "bob", "email": "bob@x.com", "password": "pw123456"})
+    rb = client.post("/api/signup", json={"username": "bob", "email": "bob@x.com", "password": "Testpass123"})
     assert rb.status_code == 200
     key_b = client.post("/api/keys", json={"label": "cli"}).json()["api_key"]
     r = client.post("/api/setups",
@@ -65,17 +65,17 @@ def test_publish_to_others_slug_returns_403(client, s3):
 
 
 def test_duplicate_signup_rejected(client, s3):
-    client.post("/api/signup", json={"username": "aaa", "email": "a@x.com", "password": "pw123456"})
-    r = client.post("/api/signup", json={"username": "aaa", "email": "a@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "aaa", "email": "a@x.com", "password": "Testpass123"})
+    r = client.post("/api/signup", json={"username": "aaa", "email": "a@x.com", "password": "Testpass123"})
     assert r.status_code == 400
 
 
 def test_login_flow(client, s3):
-    client.post("/api/signup", json={"username": "lon", "email": "lon@x.com", "password": "secret123"})
+    client.post("/api/signup", json={"username": "lon", "email": "lon@x.com", "password": "Testpass123"})
     # fresh client-like login round trip: wrong password rejected, right password OK
     r = client.post("/api/login", json={"email": "lon@x.com", "password": "wrong"})
     assert r.status_code == 401
-    r = client.post("/api/login", json={"email": "lon@x.com", "password": "secret123"})
+    r = client.post("/api/login", json={"email": "lon@x.com", "password": "Testpass123"})
     assert r.status_code == 200
     assert r.json()["username"] == "lon"
 
@@ -84,13 +84,13 @@ def test_unknown_setup_returns_404(client, s3):
     r = client.get("/api/setups/does-not-exist")
     assert r.status_code == 404
     # download is auth-gated now: sign up first so we reach 404 (not 401)
-    client.post("/api/signup", json={"username": "seek", "email": "seek@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "seek", "email": "seek@x.com", "password": "Testpass123"})
     r = client.post("/api/setups/does-not-exist/download")
     assert r.status_code == 404
 
 
 def test_list_ordering_and_runs_code(client, s3):
-    client.post("/api/signup", json={"username": "ord", "email": "ord@x.com", "password": "pw123456"})
+    client.post("/api/signup", json={"username": "ord", "email": "ord@x.com", "password": "Testpass123"})
     headers = None  # use session cookie held by TestClient
 
     # plain setup, no code effects

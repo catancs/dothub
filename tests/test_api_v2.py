@@ -7,7 +7,7 @@ keeps the session cookie set by /api/signup, so authed calls work without header
 import pytest
 
 
-def _signup(client, username, email="", password="pw123456"):
+def _signup(client, username, email="", password="Testpass123"):
     email = email or f"{username}@x.com"
     r = client.post("/api/signup", json={"username": username, "email": email, "password": password})
     assert r.status_code == 200

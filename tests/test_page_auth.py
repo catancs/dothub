@@ -20,7 +20,7 @@ def test_get_login_and_signup_render(client):
 def test_signup_logs_in_and_redirects(client):
     r = client.post(
         "/signup",
-        data={"username": "alice", "email": "alice@example.com", "password": "pw123456"},
+        data={"username": "alice", "email": "alice@example.com", "password": "Testpass123"},
         follow_redirects=False,
     )
     assert r.status_code == 303
@@ -33,7 +33,7 @@ def test_signup_logs_in_and_redirects(client):
 def test_logout_clears_session(client):
     client.post(
         "/signup",
-        data={"username": "bob", "email": "bob@example.com", "password": "pw123456"},
+        data={"username": "bob", "email": "bob@example.com", "password": "Testpass123"},
         follow_redirects=False,
     )
     assert _authed(client)
@@ -49,7 +49,7 @@ def test_logout_clears_session(client):
 def test_login_with_correct_credentials(client):
     client.post(
         "/signup",
-        data={"username": "carol", "email": "carol@example.com", "password": "pw123456"},
+        data={"username": "carol", "email": "carol@example.com", "password": "Testpass123"},
         follow_redirects=False,
     )
     client.post("/logout", follow_redirects=False)
@@ -57,7 +57,7 @@ def test_login_with_correct_credentials(client):
 
     r = client.post(
         "/login",
-        data={"identifier": "carol@example.com", "password": "pw123456"},
+        data={"identifier": "carol@example.com", "password": "Testpass123"},
         follow_redirects=False,
     )
     assert r.status_code == 303
@@ -68,7 +68,7 @@ def test_login_with_correct_credentials(client):
     client.post("/logout", follow_redirects=False)
     r2 = client.post(
         "/login",
-        data={"identifier": "carol", "password": "pw123456"},
+        data={"identifier": "carol", "password": "Testpass123"},
         follow_redirects=False,
     )
     assert r2.status_code == 303
@@ -78,7 +78,7 @@ def test_login_with_correct_credentials(client):
 def test_login_with_wrong_password_returns_401(client):
     client.post(
         "/signup",
-        data={"username": "dave", "email": "dave@example.com", "password": "pw123456"},
+        data={"username": "dave", "email": "dave@example.com", "password": "Testpass123"},
         follow_redirects=False,
     )
     client.post("/logout", follow_redirects=False)

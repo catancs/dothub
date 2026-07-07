@@ -4,7 +4,7 @@
 def _publish_risky(client):
     """Sign up and publish a setup exercising hooks, plugins, a script tag, and a secret."""
     r = client.post("/api/signup", json={
-        "username": "catancs", "email": "cat@example.com", "password": "pw-123456",
+        "username": "catancs", "email": "cat@example.com", "password": "Testpass123",
     })
     assert r.status_code == 200, r.text
 
