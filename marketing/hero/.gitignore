@@ -1,0 +1,18 @@
+node_modules/
+package-lock.json
+
+# Remotion / render intermediates
+.remotion/
+out/*.mp4
+out/*.mkv
+out/*.webm
+out/*.png
+out/*.jpeg
+out/*.jpg
+
+# keep the shipped GIF (README asset) but ignore everything else in out/
+!out/hero.gif
+
+# OS / editor cruft
+.DS_Store
+*.log

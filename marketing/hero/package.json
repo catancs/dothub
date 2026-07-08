@@ -1,0 +1,22 @@
+{
+  "name": "dothub-hero",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Marketing hero animation for the dothub README (Remotion).",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render Hero out/hero.mp4",
+    "gif": "ffmpeg -y -i out/hero.mp4 -vf \"fps=15,scale=1000:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=200[p];[s1][p]paletteuse=dither=bayer\" out/hero.gif"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.486",
+    "@remotion/google-fonts": "4.0.486",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.486"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "typescript": "5.5.4"
+  }
+}
